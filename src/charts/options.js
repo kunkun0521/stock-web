@@ -215,9 +215,11 @@ export function rankIcOption(list) {
         return win.length ? win.reduce((a, b) => a + b, 0) / win.length : null;
     });
     return {
-        grid: { left: 52, right: 16, top: 28, bottom: 44 },
+        grid: { left: 46, right: 14, top: 26, bottom: 30 },
         tooltip: { trigger: 'axis' },
         legend: { ...LEGEND_STYLE, left: 'center' },
+        // 默认聚焦最近一半批次，滚轮缩放可回看全部 120 批
+        dataZoom: [{ type: 'inside', xAxisIndex: 0, start: 50, end: 100 }],
         xAxis: {
             type: 'category', data: rows.map((r) => r.asofDate),
             axisLabel: { color: MUTED, fontSize: 10 }, axisLine: AXIS_LINE,
@@ -248,11 +250,18 @@ export function rankIcOption(list) {
     };
 }
 
-/** 融合权重横向条形图 */
+/** 融合权重横向条形图：只画有效权重，长模型名缩写，避免窄图里标签糊成一团 */
 export function weightOption(list) {
-    const rows = [...(list ?? [])].reverse();
+    const all = list ?? [];
+    const active = all.filter((w) => Number(w.weight) > 0);
+    // 全为 0 时仍展示全部，避免出现误导性的空图
+    const rows = [...(active.length ? active : all)].reverse();
+    const shortId = (id) => String(id ?? '')
+        .replace(/^factor_score/, 'factor')
+        .replace(/_h(\d+)_/, '·$1·')
+        .replace(/^ensemble_h(\d+)$/, 'ensemble·$1');
     return {
-        grid: { left: 130, right: 52, top: 10, bottom: 20 },
+        grid: { left: 104, right: 44, top: 8, bottom: 16 },
         tooltip: {
             trigger: 'axis', axisPointer: { type: 'shadow' },
             formatter: (params) => {
@@ -265,18 +274,19 @@ export function weightOption(list) {
             splitLine: SPLIT_LINE,
         },
         yAxis: {
-            type: 'category', data: rows.map((w) => w.modelId),
-            axisLabel: { color: MUTED, fontSize: 11 }, axisLine: AXIS_LINE, axisTick: { show: false },
+            type: 'category', data: rows.map((w) => shortId(w.modelId)),
+            axisLabel: { color: MUTED, fontSize: 10, width: 96, overflow: 'truncate' },
+            axisLine: AXIS_LINE, axisTick: { show: false },
         },
         series: [{
-            type: 'bar', barMaxWidth: 18,
+            type: 'bar', barMaxWidth: 12,
             data: rows.map((w) => ({
                 value: w.weight,
                 itemStyle: { color: '#2f6fed', borderRadius: 3 },
             })),
             label: {
-                show: true, position: 'right', color: MUTED, fontSize: 10,
-                formatter: (p) => `${(Number(p.value) * 100).toFixed(1)}%`,
+                show: true, position: 'right', color: MUTED, fontSize: 9,
+                formatter: (p) => (Number(p.value) > 0 ? `${(Number(p.value) * 100).toFixed(1)}%` : ''),
             },
         }],
     };

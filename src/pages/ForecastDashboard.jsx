@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { forecastApi } from '../api/forecast.js';
 import { useApi } from '../hooks/useApi.js';
@@ -6,7 +6,7 @@ import { readPageState, writePageState } from '../hooks/usePersistedState.js';
 import EChart from '../components/EChart.jsx';
 import ErrorBanner from '../components/ErrorBanner.jsx';
 import Panel from '../components/Panel.jsx';
-import StatCard from '../components/StatCard.jsx';
+import ParamLabel from '../components/ParamLabel.jsx';
 import Tabs from '../components/Tabs.jsx';
 import { rankIcOption, weightOption } from '../charts/options.js';
 import { formatNum, formatPct, pctClass } from '../utils/format.js';
@@ -25,7 +25,15 @@ const FILTER_KEY = 'forecast:filters';
 
 const readSavedFilters = () => readPageState(FILTER_KEY) ?? null;
 
-/** 页面顶部的新手术语说明（可折叠） */
+/** 常驻说明收进标题旁的悬停问号，避免占用版面高度 */
+const PANEL_TIPS = {
+    picks: '融合模型的入选名单：信号日收盘预测，下一交易日开盘买入，持有期到期后核对真实收益。鼠标停在表格行上可查看行业与预测区间。',
+    rankIc: '柱子 = 单日 RankIC（红正绿负），蓝线 = 近 20 批滚动均值；蓝线稳定在 0 轴上方才算有效。可滚轮缩放查看更早批次。',
+    weight: '各模型在融合决策中的话语权：近期表现越稳定权重越高，持续失效的自动降到 0；图中只显示权重大于 0 的模型。',
+    board: '所有模型的成绩单。点击任意一行可切换上方 RankIC 走势对应的模型；把鼠标停在行上可看特征版本与训练区间。',
+};
+
+/** 页面顶部的新手术语说明（抽屉内） */
 const GLOSSARY = [
     ['信号日', '模型"看图说话"的那一天：用当天收盘后的数据做预测，下一个交易日开盘才买入。'],
     ['持有期', '预测持有多少个交易日：10 日 ≈ 半个月，20 日 ≈ 一个月。到期后系统用真实行情自动对答案。'],
@@ -112,6 +120,134 @@ const FEATURE_GROUPS = [
     { name: '规模', items: 'log_mv（20 日均成交额对数，作规模因子）' },
 ];
 
+/** 概览数字卡：口径说明收进 title，避免常驻小字撑高卡片 */
+function MiniStat({ label, value, tone = 'plain', hint }) {
+    return (
+        <div className="fc-stat" title={hint}>
+            <span className="fc-stat-label">{label}</span>
+            <strong className={`fc-stat-value ${tone}`}>{value}</strong>
+        </div>
+    );
+}
+
+/** 说明文档抽屉：浮层不占页面文档流，展开时页面高度不变 */
+function DocDrawer({ type, onClose }) {
+    useEffect(() => {
+        const onKey = (e) => { if (e.key === 'Escape') onClose(); };
+        document.addEventListener('keydown', onKey);
+        const previous = document.body.style.overflow;
+        document.body.style.overflow = 'hidden';
+        return () => {
+            document.removeEventListener('keydown', onKey);
+            document.body.style.overflow = previous;
+        };
+    }, [onClose]);
+
+    return (
+        <div className="fc-doc-mask" onClick={onClose}>
+            <div className="fc-doc" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
+                <div className="fc-doc-head">
+                    <h2>{type === 'glossary' ? '指标说明' : '模型原理'}</h2>
+                    <button type="button" className="ghost" onClick={onClose}>关闭</button>
+                </div>
+                {type === 'glossary' ? (
+                    <table className="data-table">
+                        <tbody>
+                        {GLOSSARY.map(([term, desc]) => (
+                            <tr key={term}>
+                                <td style={{ whiteSpace: 'nowrap', fontWeight: 600 }}>{term}</td>
+                                <td className="muted" style={{ whiteSpace: 'normal', textAlign: 'left' }}>{desc}</td>
+                            </tr>
+                        ))}
+                        </tbody>
+                    </table>
+                ) : (
+                    <>
+                        <p className="muted" style={{ margin: '0 0 12px', fontSize: 12 }}>
+                            系统不是"一个模型算命"，而是 5 个风格不同的模型各自独立预测，
+                            再把它们的意见按"谁更准更稳"加权合成最终名单（融合）。模型只用到收盘价、成交量这类公开量价数据，
+                            不涉及任何内幕消息。下面用大白话解释每个模型的<strong>原理</strong>和<strong>关键参数</strong>。
+                        </p>
+
+                        <h3 className="explain-h3">一、五大模型：原理与关键参数</h3>
+                        <div className="metric-explain-grid">
+                            {MODEL_INFO.map((m) => (
+                                <div key={m.id}>
+                                    <strong>{m.id}</strong>
+                                    <span className="model-tag">{m.tag}</span>
+                                    <div style={{ margin: '6px 0' }}>🔧 <b style={{ color: 'var(--text)' }}>原理：</b>{m.principle}</div>
+                                    <ul className="param-list">
+                                        {m.params.map(([k, v]) => (
+                                            <li key={k}><b>{k}</b>：{v}</li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            ))}
+                        </div>
+
+                        <h3 className="explain-h3">二、模型"看"的数据（输入特征 / 因子）</h3>
+                        <p className="muted" style={{ fontSize: 12, margin: '0 0 8px' }}>
+                            所有特征只用比例类（收益率、价格/均线比值），不用价格绝对值，规避前复权跳变；
+                            每个交易日做 1%/99% 去极值 + rank 标准化到 [-1,1]，保证横向可比、无未来函数。
+                        </p>
+                        <div className="feature-grid">
+                            {FEATURE_GROUPS.map((g) => (
+                                <div className="feature-group" key={g.name}>
+                                    <b>{g.name}</b>
+                                    <span>{g.items}</span>
+                                </div>
+                            ))}
+                        </div>
+
+                        <h3 className="explain-h3">三、模型如何评估数据（它怎么知道自己准不准？）</h3>
+                        <p className="muted" style={{ fontSize: 12, margin: '0 0 8px' }}>
+                            真实"答案"是这样来的：信号 t 日收盘后出预测 → 下一交易日开盘买入 → 持有 H 日收盘卖出；
+                            真实收益 = 卖出价 / 买入价 − 1，超额收益 = 减当天全市场平均。到期后系统用真实行情"对答案"，并逐批打分：
+                        </p>
+                        <div className="metric-explain-grid">
+                            {EVAL_METRICS.map((e) => (
+                                <div key={e.name}>
+                                    <strong>{e.name}</strong>
+                                    <span>{e.desc}</span>
+                                </div>
+                            ))}
+                        </div>
+
+                        <h3 className="explain-h3">四、融合与选股（最终名单怎么来的）</h3>
+                        <p className="muted" style={{ fontSize: 12, margin: '0 0 8px' }}>
+                            各模型先把自己的分数转成"当天全市场百分比排名"，再按最近 60 批的 ICIR 做权重加权平均
+                            （失效模型权重置 0），合成 ensemble 分数。最后按下述规则筛出 Top 25：
+                        </p>
+                        <ul className="param-list">
+                            <li><b>概率门槛</b>：上涨概率 ≥ 0.55，且排在截面前 20%</li>
+                            <li><b>数量上限</b>：取综合分最高的 25 只</li>
+                            <li><b>行业分散</b>：同一行业最多入选 3 只，避免押注单一板块</li>
+                        </ul>
+                        <div className="forecast-warning">
+                            ⚠️ 以上所有内容均为技术方案说明与历史回测展示，<b>不构成任何投资建议</b>。
+                            日线量价模型 RankIC 稳定在 0.03~0.08 已属不错，单日 AUC 通常 0.52~0.58，请勿期待 70~80% 胜率；实盘盈亏自负。
+                        </div>
+                    </>
+                )}
+            </div>
+        </div>
+    );
+}
+
+/** 表格行悬停信息：把次要字段从列里挪到 tooltip，减少横向拥挤 */
+const pickTip = (p) => [
+    `行业：${p.industry || '-'}`,
+    `预测区间：${p.predQ10 != null && p.predQ90 != null
+        ? `${formatPct(p.predQ10, 1)} ~ ${formatPct(p.predQ90, 1)}` : '-'}`,
+    '点击查看 K 线',
+].join(' · ');
+
+const modelTip = (m) => [
+    `特征版本：${m.featureVersion || '-'}`,
+    `训练区间：${m.trainStart && m.trainEnd ? `${m.trainStart} ~ ${m.trainEnd}` : '-'}`,
+    '点击查看 RankIC 走势',
+].join(' · ');
+
 export default function ForecastDashboard() {
     const navigate = useNavigate();
     const location = useLocation();
@@ -121,12 +257,12 @@ export default function ForecastDashboard() {
     const [date, setDate] = useState(() => saved?.date ?? '');
     const [status, setStatus] = useState(() => saved?.status ?? '');
     const [modelId, setModelId] = useState(() => saved?.modelId ?? '');
-    const [showHelp, setShowHelp] = useState(() => saved?.showHelp ?? false);
-    const [showModel, setShowModel] = useState(() => saved?.showModel ?? false);
+    // 说明抽屉属于临时查看动作，不做跨页持久化，避免切回来被浮层挡住
+    const [docType, setDocType] = useState(null);
 
     useEffect(() => {
-        writePageState(FILTER_KEY, { horizon, date, status, modelId, showHelp, showModel });
-    }, [horizon, date, status, modelId, showHelp, showModel]);
+        writePageState(FILTER_KEY, { horizon, date, status, modelId });
+    }, [horizon, date, status, modelId]);
 
     const day = date || 'latest';
     const overview = useApi(() => forecastApi.overview(horizon), [horizon], { cacheKey: `fc:overview:${horizon}` });
@@ -165,9 +301,11 @@ export default function ForecastDashboard() {
     const weightOpt = useMemo(() => weightOption(weights.data), [weights.data]);
 
     const reloadAll = () => [overview, models, dates, weights, picks, evalHistory].forEach((r) => r.reload());
+    const closeDoc = useCallback(() => setDocType(null), []);
+    const toggleDoc = (type) => setDocType((current) => (current === type ? null : type));
 
     return (
-        <>
+        <div className="fc-page">
             <div className="toolbar">
                 <label className="field">
                     持有期
@@ -184,234 +322,125 @@ export default function ForecastDashboard() {
                     </select>
                 </label>
                 <button type="button" className="ghost" onClick={reloadAll}>刷新</button>
-                <button type="button" className="ghost" onClick={() => setShowHelp((v) => !v)}>
-                    {showHelp ? '收起说明' : '指标说明'}
-                </button>
-                <button type="button" className="ghost" onClick={() => setShowModel((v) => !v)}>
-                    {showModel ? '收起模型原理' : '模型原理'}
-                </button>
+                <button type="button" className="ghost" onClick={() => toggleDoc('glossary')}>指标说明</button>
+                <button type="button" className="ghost" onClick={() => toggleDoc('model')}>模型原理</button>
             </div>
-
-            {showHelp ? (
-                <Panel title="新手必读：这些指标是什么意思？">
-                    <div className="table-wrap">
-                        <table className="data-table">
-                            <tbody>
-                            {GLOSSARY.map(([term, desc]) => (
-                                <tr key={term}>
-                                    <td style={{ whiteSpace: 'nowrap', fontWeight: 600 }}>{term}</td>
-                                    <td className="muted">{desc}</td>
-                                </tr>
-                            ))}
-                            </tbody>
-                        </table>
-                    </div>
-                </Panel>
-            ) : null}
-
-            {showModel ? (
-                <Panel title="模型原理：这 5 个模型到底在做什么？">
-                    <p className="muted" style={{ margin: '0 0 12px', fontSize: 12 }}>
-                        系统不是"一个模型算命"，而是 5 个风格不同的模型各自独立预测，
-                        再把它们的意见按"谁更准更稳"加权合成最终名单（融合）。模型只用到收盘价、成交量这类公开量价数据，
-                        不涉及任何内幕消息。下面用大白话解释每个模型的<strong>原理</strong>和<strong>关键参数</strong>。
-                    </p>
-
-                    <h3 className="explain-h3">一、五大模型：原理与关键参数</h3>
-                    <div className="metric-explain-grid">
-                        {MODEL_INFO.map((m) => (
-                            <div key={m.id}>
-                                <strong>{m.id}</strong>
-                                <span className="model-tag">{m.tag}</span>
-                                <div style={{ margin: '6px 0' }}>🔧 <b style={{ color: 'var(--text)' }}>原理：</b>{m.principle}</div>
-                                <ul className="param-list">
-                                    {m.params.map(([k, v]) => (
-                                        <li key={k}><b>{k}</b>：{v}</li>
-                                    ))}
-                                </ul>
-                            </div>
-                        ))}
-                    </div>
-
-                    <h3 className="explain-h3">二、模型"看"的数据（输入特征 / 因子）</h3>
-                    <p className="muted" style={{ fontSize: 12, margin: '0 0 8px' }}>
-                        所有特征只用比例类（收益率、价格/均线比值），不用价格绝对值，规避前复权跳变；
-                        每个交易日做 1%/99% 去极值 + rank 标准化到 [-1,1]，保证横向可比、无未来函数。
-                    </p>
-                    <div className="feature-grid">
-                        {FEATURE_GROUPS.map((g) => (
-                            <div className="feature-group" key={g.name}>
-                                <b>{g.name}</b>
-                                <span>{g.items}</span>
-                            </div>
-                        ))}
-                    </div>
-
-                    <h3 className="explain-h3">三、模型如何评估数据（它怎么知道自己准不准？）</h3>
-                    <p className="muted" style={{ fontSize: 12, margin: '0 0 8px' }}>
-                        真实"答案"是这样来的：信号 t 日收盘后出预测 → 下一交易日开盘买入 → 持有 H 日收盘卖出；
-                        真实收益 = 卖出价 / 买入价 − 1，超额收益 = 减当天全市场平均。到期后系统用真实行情"对答案"，并逐批打分：
-                    </p>
-                    <div className="metric-explain-grid">
-                        {EVAL_METRICS.map((e) => (
-                            <div key={e.name}>
-                                <strong>{e.name}</strong>
-                                <span>{e.desc}</span>
-                            </div>
-                        ))}
-                    </div>
-
-                    <h3 className="explain-h3">四、融合与选股（最终名单怎么来的）</h3>
-                    <p className="muted" style={{ fontSize: 12, margin: '0 0 8px' }}>
-                        各模型先把自己的分数转成"当天全市场百分比排名"，再按最近 60 批的 ICIR 做权重加权平均
-                        （失效模型权重置 0），合成 ensemble 分数。最后按下述规则筛出 Top 25：
-                    </p>
-                    <ul className="param-list">
-                        <li><b>概率门槛</b>：上涨概率 ≥ 0.55，且排在截面前 20%</li>
-                        <li><b>数量上限</b>：取综合分最高的 25 只</li>
-                        <li><b>行业分散</b>：同一行业最多入选 3 只，避免押注单一板块</li>
-                    </ul>
-                    <div className="forecast-warning">
-                        ⚠️ 以上所有内容均为技术方案说明与历史回测展示，<b>不构成任何投资建议</b>。
-                        日线量价模型 RankIC 稳定在 0.03~0.08 已属不错，单日 AUC 通常 0.52~0.58，请勿期待 70~80% 胜率；实盘盈亏自负。
-                    </div>
-                </Panel>
-            ) : null}
 
             <ErrorBanner
                 message={errorText}
                 onRetry={failed.length ? () => failed.forEach((r) => r.reload()) : undefined}
             />
 
-            <div className="stat-grid">
-                <StatCard label="最新信号日" value={ov?.latestAsof ?? '-'} hint="用这天收盘数据做的预测"/>
-                <StatCard label="模型总数" value={ov ? ov.modelTotal : '-'} hint={ov ? `在役 ${ov.championCount} 个` : ''}/>
-                <StatCard label="影子运行" value={ov ? ov.candidateCount : '-'} hint="只观察不参与选股"/>
-                <StatCard label="已退役" value={ov ? ov.retiredCount : '-'} hint="持续失效被淘汰"/>
-                <StatCard label="最新入选" value={ov ? `${ov.selectedCount} 只` : '-'} hint="融合模型今日选股"/>
-                <StatCard
-                    label="近 60 批平均 RankIC"
+            <div className="fc-stats">
+                <MiniStat label="最新信号日" value={ov?.latestAsof ?? '-'} hint="用这天收盘数据做的预测"/>
+                <MiniStat label="模型总数" value={ov ? ov.modelTotal : '-'}
+                          hint={ov ? `在役 ${ov.championCount} 个` : ''}/>
+                <MiniStat label="影子运行" value={ov ? ov.candidateCount : '-'} hint="只观察不参与选股"/>
+                <MiniStat label="已退役" value={ov ? ov.retiredCount : '-'} hint="持续失效被淘汰"/>
+                <MiniStat label="最新入选" value={ov ? `${ov.selectedCount} 只` : '-'} hint="融合模型今日选股"/>
+                <MiniStat
+                    label="RankIC(60批)"
                     value={ov?.avgRankIc60 != null ? formatNum(ov.avgRankIc60, 4) : '-'}
                     tone={ov?.avgRankIc60 != null ? pctClass(ov.avgRankIc60) : 'plain'}
                     hint="越正越好，0.03~0.08 属有效"
                 />
             </div>
 
-            <Panel
-                title={`Top N 选股（${day === 'latest' ? '最新信号日' : day}）`}
-            >
-                <p className="muted" style={{ margin: '0 0 8px', fontSize: 12 }}>
-                    融合模型选出的名单：信号日收盘后预测，下一交易日开盘买入，持有 {horizon} 个交易日后系统自动核对真实收益。
-                    仅供研究参考，不构成投资建议。
-                </p>
-                <div className="table-wrap">
-                    <table className="data-table">
-                        <thead>
-                        <tr>
-                            <th>排名</th>
-                            <th>代码</th>
-                            <th>名称</th>
-                            <th>行业</th>
-                            <th>上涨概率</th>
-                            <th>预测收益</th>
-                            <th>预测区间</th>
-                            <th>真实收益</th>
-                            <th>超额收益</th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        {(picks.data ?? []).map((p) => (
-                            <tr
-                                key={`${p.code}-${p.market}`}
-                                onClick={() => navigate(`/stocks/${p.code}`, {
-                                    state: {
-                                        from: location.pathname + location.search,
-                                        back: { horizon, date, status, modelId, showHelp, showModel },
-                                    },
-                                })}
-                            >
-                                <td>{p.rankAll ?? '-'}</td>
-                                <td>{p.code}</td>
-                                <td>{p.name || '-'}</td>
-                                <td>{p.industry || '-'}</td>
-                                <td>{p.probUp != null ? `${(Number(p.probUp) * 100).toFixed(1)}%` : '-'}</td>
-                                <td className={pctClass(p.predRet)}>{formatPct(p.predRet)}</td>
-                                <td>
-                                    {p.predQ10 != null && p.predQ90 != null
-                                        ? `${formatPct(p.predQ10, 1)} ~ ${formatPct(p.predQ90, 1)}`
-                                        : '-'}
-                                </td>
-                                <td className={pctClass(p.realRet)}>
-                                    {p.outcomeFilled ? formatPct(p.realRet) : '未到期'}
-                                </td>
-                                <td className={pctClass(p.excessRet)}>
-                                    {p.outcomeFilled ? formatPct(p.excessRet) : '-'}
-                                </td>
+            <div className="fc-main-row">
+                <Panel title={<ParamLabel tip={PANEL_TIPS.picks}>Top N 选股（{day === 'latest' ? '最新信号日' : day}）</ParamLabel>}>
+                    <div className="table-wrap fc-table-tall">
+                        <table className="data-table">
+                            <thead>
+                            <tr>
+                                <th>排名</th>
+                                <th>代码</th>
+                                <th>名称</th>
+                                <th>行业</th>
+                                <th>上涨概率</th>
+                                <th>预测收益</th>
+                                <th>真实收益</th>
+                                <th>超额收益</th>
                             </tr>
-                        ))}
-                        </tbody>
-                    </table>
-                    {picks.loading ? <div className="empty">加载中…</div> : null}
-                    {!picks.loading && !(picks.data?.length)
-                        ? <div className="empty">暂无选股数据，请先运行 stock-predict 流水线（python -m predict.cli daily）</div>
-                        : null}
+                            </thead>
+                            <tbody>
+                            {(picks.data ?? []).map((p) => (
+                                <tr
+                                    key={`${p.code}-${p.market}`}
+                                    title={pickTip(p)}
+                                    onClick={() => navigate(`/stocks/${p.code}`, {
+                                        state: {
+                                            from: location.pathname + location.search,
+                                            back: { horizon, date, status, modelId },
+                                        },
+                                    })}
+                                >
+                                    <td>{p.rankAll ?? '-'}</td>
+                                    <td>{p.code}</td>
+                                    <td>{p.name || '-'}</td>
+                                    <td>{p.industry || '-'}</td>
+                                    <td>{p.probUp != null ? `${(Number(p.probUp) * 100).toFixed(1)}%` : '-'}</td>
+                                    <td className={pctClass(p.predRet)}>{formatPct(p.predRet)}</td>
+                                    <td className={pctClass(p.realRet)}>
+                                        {p.outcomeFilled ? formatPct(p.realRet) : '未到期'}
+                                    </td>
+                                    <td className={pctClass(p.excessRet)}>
+                                        {p.outcomeFilled ? formatPct(p.excessRet) : '-'}
+                                    </td>
+                                </tr>
+                            ))}
+                            </tbody>
+                        </table>
+                        {picks.loading ? <div className="empty">加载中…</div> : null}
+                        {!picks.loading && !(picks.data?.length)
+                            ? <div className="empty">暂无选股数据，请先运行 stock-predict 流水线（python -m predict.cli daily）</div>
+                            : null}
+                    </div>
+                </Panel>
+
+                <div className="fc-chart-col">
+                    <Panel
+                        title={<ParamLabel tip={PANEL_TIPS.rankIc}>RankIC 走势</ParamLabel>}
+                        extra={(
+                            <select value={modelId} onChange={(e) => setModelId(e.target.value)}>
+                                {(models.data ?? []).map((m) => (
+                                    <option key={m.modelId} value={m.modelId}>{m.modelId}</option>
+                                ))}
+                            </select>
+                        )}
+                    >
+                        <EChart
+                            height={180}
+                            option={rankIcOpt}
+                            loading={evalHistory.loading}
+                            empty={!evalHistory.loading && !(evalHistory.data?.length)}
+                            emptyText="该模型暂无到期评估批次"
+                        />
+                    </Panel>
+
+                    <Panel title={<ParamLabel tip={PANEL_TIPS.weight}>融合权重</ParamLabel>}>
+                        <EChart
+                            height={180}
+                            option={weightOpt}
+                            loading={weights.loading}
+                            empty={!weights.loading && !(weights.data?.length)}
+                            emptyText="暂无融合权重"
+                        />
+                    </Panel>
                 </div>
-            </Panel>
-
-            <div className="grid-2">
-            <Panel
-                title="模型 RankIC 走势"
-                extra={(
-                    <select value={modelId} onChange={(e) => setModelId(e.target.value)}>
-                        {(models.data ?? []).map((m) => (
-                            <option key={m.modelId} value={m.modelId}>{m.modelId}</option>
-                        ))}
-                    </select>
-                )}
-            >
-                <p className="muted" style={{ margin: '0 0 8px', fontSize: 12 }}>
-                    每天预测准不准的历史记录：柱子 = 单日 RankIC（红正绿负），蓝线 = 近 20 天平均水平。蓝线稳定在 0 轴上方才算有效。
-                </p>
-                <EChart
-                    height={300}
-                    option={rankIcOpt}
-                    loading={evalHistory.loading}
-                    empty={!evalHistory.loading && !(evalHistory.data?.length)}
-                    emptyText="该模型暂无到期评估批次（运行 python -m predict.cli shadow 可补历史）"
-                />
-            </Panel>
-
-            <Panel title="融合权重（最新）">
-                <p className="muted" style={{ margin: '0 0 8px', fontSize: 12 }}>
-                    各模型在"集体决策"中的话语权：近期表现越稳定的模型权重越高，持续失效的会被自动降到 0。
-                </p>
-                <EChart
-                    height={300}
-                    option={weightOpt}
-                    loading={weights.loading}
-                    empty={!weights.loading && !(weights.data?.length)}
-                    emptyText="暂无融合权重（评估批次满 5 批后自动生成）"
-                />
-            </Panel>
             </div>
 
             <Panel
-                title="模型榜单"
+                title={<ParamLabel tip={PANEL_TIPS.board}>模型榜单（{modelRows.length}）</ParamLabel>}
                 extra={<Tabs items={STATUS_TABS} value={status} onChange={setStatus}/>}
             >
-                <p className="muted" style={{ margin: '0 0 8px', fontSize: 12 }}>
-                    所有模型的成绩单，点击任意一行可在上方查看它的 RankIC 走势。TopN 超额 = 入选名单平均跑赢市场的幅度。
-                </p>
-                <div className="table-wrap">
+                <div className="table-wrap fc-table-short">
                     <table className="data-table">
                         <thead>
                         <tr>
                             <th>模型</th>
                             <th>类型</th>
                             <th>状态</th>
-                            <th>特征版本</th>
-                            <th>训练区间</th>
-                            <th>近60批 RankIC</th>
+                            <th>RankIC(60)</th>
                             <th>ICIR(60)</th>
                             <th>TopN 超额</th>
                             <th>评估批数</th>
@@ -419,12 +448,13 @@ export default function ForecastDashboard() {
                         </thead>
                         <tbody>
                         {modelRows.map((m) => (
-                            <tr key={m.modelId} onClick={() => setModelId(m.modelId)}>
+                            <tr key={m.modelId}
+                                title={modelTip(m)}
+                                className={m.modelId === modelId ? 'fc-row-active' : ''}
+                                onClick={() => setModelId(m.modelId)}>
                                 <td>{m.modelId}</td>
                                 <td>{m.modelType}</td>
                                 <td>{STATUS_LABEL[m.status] ?? m.status}</td>
-                                <td>{m.featureVersion}</td>
-                                <td>{m.trainStart && m.trainEnd ? `${m.trainStart} ~ ${m.trainEnd}` : '-'}</td>
                                 <td className={pctClass(m.avgRankIc60)}>
                                     {m.avgRankIc60 != null ? formatNum(m.avgRankIc60, 4) : '-'}
                                 </td>
@@ -441,6 +471,8 @@ export default function ForecastDashboard() {
                     {!models.loading && !modelRows.length ? <div className="empty">该状态下暂无模型</div> : null}
                 </div>
             </Panel>
-        </>
+
+            {docType ? <DocDrawer type={docType} onClose={closeDoc}/> : null}
+        </div>
     );
 }
