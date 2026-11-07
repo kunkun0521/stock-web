@@ -130,7 +130,7 @@ export default function MarketDashboard() {
                         </thead>
                         <tbody>
                         {(ranking.data ?? []).map((q) => (
-                            <tr key={`${q.code}-${q.tradeDate}`} onClick={() => navigate(`/stocks/${q.code}`)}>
+                            <tr key={`${q.code}-${q.tradeDate}`} onClick={() => navigate(`/stocks/${q.code}`, { state: { from: window.location.pathname + window.location.search } })}>
                                 <td>{q.code}</td>
                                 <td>{q.name || '-'}</td>
                                 <td>{formatPrice(q.close)}</td>

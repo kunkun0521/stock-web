@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { stockApi } from '../api/stock.js';
 import { useApi } from '../hooks/useApi.js';
 import EChart from '../components/EChart.jsx';
@@ -17,6 +17,16 @@ const PERIOD_TABS = [
     { value: 'month', label: '月线' },
 ];
 
+/** 返回按钮文案：按"从哪个页面进来"给出明确去处 */
+const BACK_LABEL = {
+    '/': '返回市场看板',
+    '/stocks': '返回股票列表',
+    '/scores': '返回量化评分',
+    '/forecast': '返回模型预测',
+    '/short-term': '返回短线预测',
+    '/data-crawler': '返回数据同步',
+};
+
 function Metric({ label, value, tone = '' }) {
     return (
         <div className="metric">
@@ -28,9 +38,30 @@ function Metric({ label, value, tone = '' }) {
 
 export default function StockDetail() {
     const { code } = useParams();
+    const location = useLocation();
+    const navigate = useNavigate();
     const [period, setPeriod] = useState('day');
     const [page, setPage] = useState(1);
     const size = 20;
+
+    // 跳转来源由列表页通过 location.state.from 传入；back 是来源页的筛选状态，返回时原样带回
+    const from = typeof location.state?.from === 'string' ? location.state.from : '';
+    const restore = location.state?.back;
+    const hasHistory = Number(window.history.state?.idx ?? 0) > 0;
+    const backLabel = from
+        ? (BACK_LABEL[from.split('?')[0]] ?? '返回上一页')
+        : (hasHistory ? '返回上一页' : '返回股票列表');
+
+    const handleBack = (e) => {
+        e.preventDefault();
+        if (from) {
+            navigate(from, { state: restore ? { restore } : undefined });
+        } else if (hasHistory) {
+            navigate(-1);
+        } else {
+            navigate('/stocks');  // 直接打开/刷新详情页时无来源，兜底到列表
+        }
+    };
 
     const quote = useApi(() => stockApi.quote(code), [code]);
     const kline = useApi(() => stockApi.kline(code, { period, limit: 300 }), [code, period]);
@@ -51,7 +82,7 @@ export default function StockDetail() {
 
             <div className="detail-head">
                 <div>
-                    <Link to="/stocks" className="back-link">← 返回列表</Link>
+                    <a href={from || '/stocks'} className="back-link" onClick={handleBack}>← {backLabel}</a>
                     <h2 className="detail-title">
                         {quote.data?.name || code} <span className="code-tag">{code}</span>
                     </h2>

@@ -172,7 +172,7 @@ export default function ScoreRanking() {
                         </thead>
                         <tbody>
                         {rows.map((row) => (
-                            <tr key={`${row.code}-${row.tradeDate}`} onClick={() => navigate(`/stocks/${row.code}`)}>
+                            <tr key={`${row.code}-${row.tradeDate}`} onClick={() => navigate(`/stocks/${row.code}`, { state: { from: window.location.pathname + window.location.search } })}>
                                 <td className="rank-number">{row.rank}</td>
                                 <td className="stock-cell">
                                     <strong>{row.code}</strong>

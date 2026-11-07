@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { forecastApi } from '../api/forecast.js';
 import { useApi } from '../hooks/useApi.js';
 import EChart from '../components/EChart.jsx';
@@ -19,6 +19,18 @@ const STATUS_TABS = [
 
 const STATUS_LABEL = { champion: '在役', candidate: '影子运行', retired: '已退役' };
 
+/** 筛选状态保存在会话内：页面内「返回」和浏览器后退都能还原进入 K 线前的选择 */
+const FILTER_KEY = 'forecast:filters';
+
+function readSavedFilters() {
+    try {
+        const raw = sessionStorage.getItem(FILTER_KEY);
+        return raw ? JSON.parse(raw) : null;
+    } catch {
+        return null;  // 隐私模式等场景下 sessionStorage 不可用
+    }
+}
+
 /** 页面顶部的新手术语说明（可折叠） */
 const GLOSSARY = [
     ['信号日', '模型"看图说话"的那一天：用当天收盘后的数据做预测，下一个交易日开盘才买入。'],
@@ -33,13 +45,99 @@ const GLOSSARY = [
     ['Top N 选股', '通过概率门槛、成交额过滤、同行业不超过 3 只等规则后，最终入选的股票名单。'],
 ];
 
+/** 五大模型的原理与关键参数（大白话版，对应 predict/models 下的实现） */
+const MODEL_INFO = [
+    {
+        id: 'A · 因子打分',
+        tag: 'factor_score · 基线模型',
+        principle: '把 18 个指标（因子）各自和历史涨跌的相关性算出来，相关性越稳定的因子话语权越大；加权求和得到综合分，再把分数"翻译"成上涨概率。',
+        params: [
+            ['因子权重', '= 该因子近期"排序相关性"(RankIC)的稳定性(ICIR)；负相关的因子反着用（保留符号）。'],
+            ['概率校准', '用保序回归(Isotonic)把分数映射到真实胜率，不假设任何分布。'],
+            ['收益映射', '分数 → 预测收益 用最小二乘线性拟合（斜率/截距）。'],
+        ],
+    },
+    {
+        id: 'B · 逻辑回归',
+        tag: 'logit · 线性概率模型',
+        principle: '把 18 个因子当"证据"，用"是否上涨"当"结论"，学一个线性公式，直接输出上涨概率。',
+        params: [
+            ['弹性网络', 'l1_ratio=0.5, C=0.5：L1+L2 混合正则，防止因子太多导致过拟合。'],
+            ['求解器', 'saga：适合弹性网络的优化器；max_iter=2000 保证收敛。'],
+        ],
+    },
+    {
+        id: 'C · LightGBM 三头',
+        tag: 'lgbm · 梯度提升树',
+        principle: '用很多棵决策树堆叠学习，一个头预测涨/跌概率，一个头预测涨多少，一个头预测涨跌幅的乐观/悲观区间（分位数回归）。',
+        params: [
+            ['树结构', 'num_leaves=31, min_child_samples=500, learning_rate=0.03, n_estimators=600（树的棵数）。'],
+            ['抗过拟合', 'feature_fraction=0.7（每树随机用 70% 因子）、bagging_fraction=0.8（每轮抽 80% 样本）。'],
+            ['近期加权', '越近的样本权重越大（线性递增到 2 倍）；回归目标用去极值(Winsorize 1%/99%)的超额收益。'],
+        ],
+    },
+    {
+        id: 'D · 排序学习',
+        tag: 'lgbm_rank · LambdaRank',
+        principle: '不预测"涨多少"，只预测"谁更该排前面"。每天把股票按未来表现分 5 档，训练模型让好股票排更靠前（优化 NDCG）。',
+        params: [
+            ['标签', '当天超额收益五分档(0~4)，每个交易日作为一个排序 group。'],
+            ['截断', 'lambdarank_truncation_level=20：重点关注前 20 名是否排对。树参数同 C。'],
+        ],
+    },
+    {
+        id: 'E · 形态规则',
+        tag: 'rule · 硬规则（无需训练）',
+        principle: '用肉眼能懂的 4 条形态打分：多头排列、接近 20 日新高、温和放量、未超买。满足几条就得几分。',
+        params: [
+            ['四条规则', '①close>MA20>MA60 ②距20日新高≤0.5% ③量比1.5~3 ④RSI<80。'],
+            ['打分', '每条 1 分，满分 4 → ÷4 归一化到[0,1]；prob_up=0.45+得分×0.05。predict 时直接从行情自算。'],
+        ],
+    },
+];
+
+/** 模型评估口径（对应 predict/evaluate.py） */
+const EVAL_METRICS = [
+    { name: '真实答案口径', desc: 't 日收盘后预测 → t+1 开盘买入 → t+H 收盘卖出；真实收益 = 卖价/买价 − 1，超额 = 减当天全市场平均。' },
+    { name: 'RankIC', desc: '预测排名 vs 真实涨跌排名 的相关性（spearman）：越正越准。0.03~0.08 属有效，持续为负 = 失效。' },
+    { name: 'ICIR', desc: 'RankIC 的稳定性 = 均值 ÷ 波动；融合权重按它分配（又准又稳的模型话语权更高）。' },
+    { name: 'AUC', desc: '上涨概率对"是否上涨"的区分能力：0.5=瞎猜，0.52~0.58 属正常有效。' },
+    { name: 'Brier', desc: '概率预测的平方误差，越小说明概率越准。' },
+    { name: '分层单调性', desc: '按预测分数十分位，第 10 档均值 − 第 1 档 = decile_spread，验证高分组的确涨得更多。' },
+    { name: 'TopN 超额 / 胜率', desc: '入选名单平均跑赢市场多少(超额)、以及里面上涨的比例(胜率)。' },
+    { name: '自动淘汰', desc: '滚动 60 批 ICIR<0 且样本够 → 自动退役；影子候选表现超现任才晋升。' },
+];
+
+/** 模型输入的因子（特征）分组 */
+const FEATURE_GROUPS = [
+    { name: '收益率', items: 'ret_5 / 10 / 20 / 60（5、10、20、60 日收益率）' },
+    { name: '趋势/均线', items: 'ma_bias_20（偏离20日均线）、macd_hist（MACD 柱）' },
+    { name: '波动/风险', items: 'vol_20（收益波动）、atr_14（真实波幅）、amihud_20（非流动性）' },
+    { name: '换手/量', items: 'turn_ma5 / 20（换手率均值）、vol_ratio（量比）' },
+    { name: '估值倒数', items: 'ep=1/PE、bp=1/PB、sp=1/PS、cfp=1/PCF（天然处理负值）' },
+    { name: '规模', items: 'log_mv（20 日均成交额对数，作规模因子）' },
+];
+
 export default function ForecastDashboard() {
     const navigate = useNavigate();
-    const [horizon, setHorizon] = useState(10);
-    const [date, setDate] = useState('');
-    const [status, setStatus] = useState('');
-    const [modelId, setModelId] = useState('');
-    const [showHelp, setShowHelp] = useState(false);
+    const location = useLocation();
+    // 优先用详情页返回时带回的状态；否则用会话内保存的筛选（兼容浏览器后退 / 重新进入）
+    const saved = location.state?.restore ?? readSavedFilters();
+    const [horizon, setHorizon] = useState(() => saved?.horizon ?? 10);
+    const [date, setDate] = useState(() => saved?.date ?? '');
+    const [status, setStatus] = useState(() => saved?.status ?? '');
+    const [modelId, setModelId] = useState(() => saved?.modelId ?? '');
+    const [showHelp, setShowHelp] = useState(() => saved?.showHelp ?? false);
+    const [showModel, setShowModel] = useState(() => saved?.showModel ?? false);
+
+    useEffect(() => {
+        try {
+            sessionStorage.setItem(FILTER_KEY, JSON.stringify(
+                { horizon, date, status, modelId, showHelp, showModel }));
+        } catch {
+            // 忽略存储不可用的情况，不影响页面功能
+        }
+    }, [horizon, date, status, modelId, showHelp, showModel]);
 
     const day = date || 'latest';
     const overview = useApi(() => forecastApi.overview(horizon), [horizon], { cacheKey: `fc:overview:${horizon}` });
@@ -100,6 +198,9 @@ export default function ForecastDashboard() {
                 <button type="button" className="ghost" onClick={() => setShowHelp((v) => !v)}>
                     {showHelp ? '收起说明' : '指标说明'}
                 </button>
+                <button type="button" className="ghost" onClick={() => setShowModel((v) => !v)}>
+                    {showModel ? '收起模型原理' : '模型原理'}
+                </button>
             </div>
 
             {showHelp ? (
@@ -115,6 +216,75 @@ export default function ForecastDashboard() {
                             ))}
                             </tbody>
                         </table>
+                    </div>
+                </Panel>
+            ) : null}
+
+            {showModel ? (
+                <Panel title="模型原理：这 5 个模型到底在做什么？">
+                    <p className="muted" style={{ margin: '0 0 12px', fontSize: 12 }}>
+                        系统不是"一个模型算命"，而是 5 个风格不同的模型各自独立预测，
+                        再把它们的意见按"谁更准更稳"加权合成最终名单（融合）。模型只用到收盘价、成交量这类公开量价数据，
+                        不涉及任何内幕消息。下面用大白话解释每个模型的<strong>原理</strong>和<strong>关键参数</strong>。
+                    </p>
+
+                    <h3 className="explain-h3">一、五大模型：原理与关键参数</h3>
+                    <div className="metric-explain-grid">
+                        {MODEL_INFO.map((m) => (
+                            <div key={m.id}>
+                                <strong>{m.id}</strong>
+                                <span className="model-tag">{m.tag}</span>
+                                <div style={{ margin: '6px 0' }}>🔧 <b style={{ color: 'var(--text)' }}>原理：</b>{m.principle}</div>
+                                <ul className="param-list">
+                                    {m.params.map(([k, v]) => (
+                                        <li key={k}><b>{k}</b>：{v}</li>
+                                    ))}
+                                </ul>
+                            </div>
+                        ))}
+                    </div>
+
+                    <h3 className="explain-h3">二、模型"看"的数据（输入特征 / 因子）</h3>
+                    <p className="muted" style={{ fontSize: 12, margin: '0 0 8px' }}>
+                        所有特征只用比例类（收益率、价格/均线比值），不用价格绝对值，规避前复权跳变；
+                        每个交易日做 1%/99% 去极值 + rank 标准化到 [-1,1]，保证横向可比、无未来函数。
+                    </p>
+                    <div className="feature-grid">
+                        {FEATURE_GROUPS.map((g) => (
+                            <div className="feature-group" key={g.name}>
+                                <b>{g.name}</b>
+                                <span>{g.items}</span>
+                            </div>
+                        ))}
+                    </div>
+
+                    <h3 className="explain-h3">三、模型如何评估数据（它怎么知道自己准不准？）</h3>
+                    <p className="muted" style={{ fontSize: 12, margin: '0 0 8px' }}>
+                        真实"答案"是这样来的：信号 t 日收盘后出预测 → 下一交易日开盘买入 → 持有 H 日收盘卖出；
+                        真实收益 = 卖出价 / 买入价 − 1，超额收益 = 减当天全市场平均。到期后系统用真实行情"对答案"，并逐批打分：
+                    </p>
+                    <div className="metric-explain-grid">
+                        {EVAL_METRICS.map((e) => (
+                            <div key={e.name}>
+                                <strong>{e.name}</strong>
+                                <span>{e.desc}</span>
+                            </div>
+                        ))}
+                    </div>
+
+                    <h3 className="explain-h3">四、融合与选股（最终名单怎么来的）</h3>
+                    <p className="muted" style={{ fontSize: 12, margin: '0 0 8px' }}>
+                        各模型先把自己的分数转成"当天全市场百分比排名"，再按最近 60 批的 ICIR 做权重加权平均
+                        （失效模型权重置 0），合成 ensemble 分数。最后按下述规则筛出 Top 25：
+                    </p>
+                    <ul className="param-list">
+                        <li><b>概率门槛</b>：上涨概率 ≥ 0.55，且排在截面前 20%</li>
+                        <li><b>数量上限</b>：取综合分最高的 25 只</li>
+                        <li><b>行业分散</b>：同一行业最多入选 3 只，避免押注单一板块</li>
+                    </ul>
+                    <div className="forecast-warning">
+                        ⚠️ 以上所有内容均为技术方案说明与历史回测展示，<b>不构成任何投资建议</b>。
+                        日线量价模型 RankIC 稳定在 0.03~0.08 已属不错，单日 AUC 通常 0.52~0.58，请勿期待 70~80% 胜率；实盘盈亏自负。
                     </div>
                 </Panel>
             ) : null}
@@ -162,7 +332,15 @@ export default function ForecastDashboard() {
                         </thead>
                         <tbody>
                         {(picks.data ?? []).map((p) => (
-                            <tr key={`${p.code}-${p.market}`} onClick={() => navigate(`/stocks/${p.code}`)}>
+                            <tr
+                                key={`${p.code}-${p.market}`}
+                                onClick={() => navigate(`/stocks/${p.code}`, {
+                                    state: {
+                                        from: location.pathname + location.search,
+                                        back: { horizon, date, status, modelId, showHelp, showModel },
+                                    },
+                                })}
+                            >
                                 <td>{p.rankAll ?? '-'}</td>
                                 <td>{p.code}</td>
                                 <td>{p.name || '-'}</td>

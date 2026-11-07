@@ -38,7 +38,7 @@ export default function Header() {
     const goto = (code) => {
         setOpen(false);
         setKeyword('');
-        navigate(`/stocks/${code}`);
+        navigate(`/stocks/${code}`, { state: { from: window.location.pathname + window.location.search } });
     };
 
     return (

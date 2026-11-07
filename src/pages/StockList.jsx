@@ -146,7 +146,7 @@ export default function StockList() {
                     </thead>
                     <tbody>
                     {(list.data?.items ?? []).map((s) => (
-                        <tr key={s.code} onClick={() => navigate(`/stocks/${s.code}`)}>
+                        <tr key={s.code} onClick={() => navigate(`/stocks/${s.code}`, { state: { from: window.location.pathname + window.location.search } })}>
                             <td>{s.code}</td>
                             <td>{s.name}</td>
                             <td>{marketLabel(s.market)}</td>
