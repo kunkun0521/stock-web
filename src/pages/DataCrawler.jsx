@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { usePersistedState } from '../hooks/usePersistedState.js';
 import { dataCrawlerApi } from '../api/dataCrawler.js';
 import { useApi } from '../hooks/useApi.js';
 import ErrorBanner from '../components/ErrorBanner.jsx';
@@ -26,8 +27,8 @@ const statusClass = (status) => status === 'running' ? 'crawler-running' : statu
 const formatTime = (value) => value ? String(value).replace('T', ' ') : '-';
 
 export default function DataCrawler() {
-    const [form, setForm] = useState(defaultForm);
-    const [activeTaskId, setActiveTaskId] = useState('');
+    const [form, setForm] = usePersistedState('crawler:form', defaultForm);
+    const [activeTaskId, setActiveTaskId] = usePersistedState('crawler:activeTaskId', '');
     const [starting, setStarting] = useState(false);
     const [message, setMessage] = useState('');
     const [actionError, setActionError] = useState('');

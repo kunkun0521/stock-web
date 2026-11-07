@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
+import { usePersistedState } from '../hooks/usePersistedState.js';
 import { useNavigate } from 'react-router-dom';
 import { marketApi } from '../api/market.js';
 import { useApi } from '../hooks/useApi.js';
@@ -25,9 +26,9 @@ const DIM_TABS = [
 
 export default function MarketDashboard() {
     const navigate = useNavigate();
-    const [date, setDate] = useState('');
-    const [dim, setDim] = useState('board');
-    const [rankType, setRankType] = useState('gainers');
+    const [date, setDate] = usePersistedState('market:date', '');
+    const [dim, setDim] = usePersistedState('market:dim', 'board');
+    const [rankType, setRankType] = usePersistedState('market:rankType', 'gainers');
 
     const day = date || 'latest';
     const calendar = useApi(() => marketApi.calendar(60), [], { cacheKey: 'market:calendar:60' });

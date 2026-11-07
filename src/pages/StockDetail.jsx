@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { usePersistedState } from '../hooks/usePersistedState.js';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { stockApi } from '../api/stock.js';
 import { useApi } from '../hooks/useApi.js';
@@ -24,6 +24,7 @@ const BACK_LABEL = {
     '/scores': '返回量化评分',
     '/forecast': '返回模型预测',
     '/short-term': '返回短线预测',
+    '/t-trading': '返回做T模拟',
     '/data-crawler': '返回数据同步',
 };
 
@@ -40,8 +41,8 @@ export default function StockDetail() {
     const { code } = useParams();
     const location = useLocation();
     const navigate = useNavigate();
-    const [period, setPeriod] = useState('day');
-    const [page, setPage] = useState(1);
+    const [period, setPeriod] = usePersistedState(`stock-detail:${code}:period`, 'day');
+    const [page, setPage] = usePersistedState(`stock-detail:${code}:page`, 1);
     const size = 20;
 
     // 跳转来源由列表页通过 location.state.from 传入；back 是来源页的筛选状态，返回时原样带回

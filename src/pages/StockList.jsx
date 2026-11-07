@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { usePersistedState } from '../hooks/usePersistedState.js';
 import { useNavigate } from 'react-router-dom';
 import { stockApi } from '../api/stock.js';
 import { useApi } from '../hooks/useApi.js';
@@ -18,17 +18,17 @@ const SORT_FIELDS = [
 export default function StockList() {
     const navigate = useNavigate();
 
-    const [keyword, setKeyword] = useState('');
-    const [query, setQuery] = useState({});
-    const [board, setBoard] = useState('');
-    const [industry, setIndustry] = useState('');
-    const [exchange, setExchange] = useState('');
-    const [market, setMarket] = useState('');
-    const [listedOnly, setListedOnly] = useState(true);
-    const [sort, setSort] = useState('code');
-    const [order, setOrder] = useState('asc');
-    const [page, setPage] = useState(1);
-    const [size, setSize] = useState(20);
+    const [keyword, setKeyword] = usePersistedState('stocks:keyword', '');
+    const [query, setQuery] = usePersistedState('stocks:query', {});
+    const [board, setBoard] = usePersistedState('stocks:board', '');
+    const [industry, setIndustry] = usePersistedState('stocks:industry', '');
+    const [exchange, setExchange] = usePersistedState('stocks:exchange', '');
+    const [market, setMarket] = usePersistedState('stocks:market', '');
+    const [listedOnly, setListedOnly] = usePersistedState('stocks:listedOnly', true);
+    const [sort, setSort] = usePersistedState('stocks:sort', 'code');
+    const [order, setOrder] = usePersistedState('stocks:order', 'asc');
+    const [page, setPage] = usePersistedState('stocks:page', 1);
+    const [size, setSize] = usePersistedState('stocks:size', 20);
 
     const filters = useApi(() => stockApi.filters(), []);
     const list = useApi(

@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { usePersistedState } from '../hooks/usePersistedState.js';
 import { useNavigate } from 'react-router-dom';
 import { scoreApi } from '../api/score.js';
 import { useApi } from '../hooks/useApi.js';
@@ -29,13 +30,13 @@ function FactorBar({ label, value }) {
 
 export default function ScoreRanking() {
     const navigate = useNavigate();
-    const [adjustFlag, setAdjustFlag] = useState(2);
-    const [date, setDate] = useState('');
-    const [keyword, setKeyword] = useState('');
-    const [queryKeyword, setQueryKeyword] = useState('');
-    const [minScore, setMinScore] = useState('');
-    const [page, setPage] = useState(1);
-    const [size, setSize] = useState(50);
+    const [adjustFlag, setAdjustFlag] = usePersistedState('scores:adjustFlag', 2);
+    const [date, setDate] = usePersistedState('scores:date', '');
+    const [keyword, setKeyword] = usePersistedState('scores:keyword', '');
+    const [queryKeyword, setQueryKeyword] = usePersistedState('scores:queryKeyword', '');
+    const [minScore, setMinScore] = usePersistedState('scores:minScore', '');
+    const [page, setPage] = usePersistedState('scores:page', 1);
+    const [size, setSize] = usePersistedState('scores:size', 50);
     const [rebuilding, setRebuilding] = useState(false);
     const [rebuildError, setRebuildError] = useState('');
 

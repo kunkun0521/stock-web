@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { forecastApi } from '../api/forecast.js';
 import { useApi } from '../hooks/useApi.js';
+import { readPageState, writePageState } from '../hooks/usePersistedState.js';
 import EChart from '../components/EChart.jsx';
 import ErrorBanner from '../components/ErrorBanner.jsx';
 import Panel from '../components/Panel.jsx';
@@ -19,17 +20,10 @@ const STATUS_TABS = [
 
 const STATUS_LABEL = { champion: '在役', candidate: '影子运行', retired: '已退役' };
 
-/** 筛选状态保存在会话内：页面内「返回」和浏览器后退都能还原进入 K 线前的选择 */
+/** 筛选状态保存在会话内：页面内「返回」、侧边栏切页和浏览器后退都能还原之前的选择 */
 const FILTER_KEY = 'forecast:filters';
 
-function readSavedFilters() {
-    try {
-        const raw = sessionStorage.getItem(FILTER_KEY);
-        return raw ? JSON.parse(raw) : null;
-    } catch {
-        return null;  // 隐私模式等场景下 sessionStorage 不可用
-    }
-}
+const readSavedFilters = () => readPageState(FILTER_KEY) ?? null;
 
 /** 页面顶部的新手术语说明（可折叠） */
 const GLOSSARY = [
@@ -131,12 +125,7 @@ export default function ForecastDashboard() {
     const [showModel, setShowModel] = useState(() => saved?.showModel ?? false);
 
     useEffect(() => {
-        try {
-            sessionStorage.setItem(FILTER_KEY, JSON.stringify(
-                { horizon, date, status, modelId, showHelp, showModel }));
-        } catch {
-            // 忽略存储不可用的情况，不影响页面功能
-        }
+        writePageState(FILTER_KEY, { horizon, date, status, modelId, showHelp, showModel });
     }, [horizon, date, status, modelId, showHelp, showModel]);
 
     const day = date || 'latest';

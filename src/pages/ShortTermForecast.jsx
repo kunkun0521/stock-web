@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { usePersistedState } from '../hooks/usePersistedState.js';
 import { shortTermHistoryApi } from '../api/shortTermHistory.js';
 import { useApi } from '../hooks/useApi.js';
 import ErrorBanner from '../components/ErrorBanner.jsx';
@@ -68,17 +69,17 @@ function StatusText({ status }) {
 }
 
 export default function ShortTermForecast() {
-    const [adjustFlag, setAdjustFlag] = useState(2);
-    const [date, setDate] = useState('');
-    const [keyword, setKeyword] = useState('');
-    const [queryKeyword, setQueryKeyword] = useState('');
-    const [minProbability, setMinProbability] = useState('');
-    const [sortBy, setSortBy] = useState('score20');
-    const [sortDirection, setSortDirection] = useState('desc');
-    const [runId, setRunId] = useState('');
-    const [selectedCode, setSelectedCode] = useState('');
-    const [page, setPage] = useState(1);
-    const [size, setSize] = useState(50);
+    const [adjustFlag, setAdjustFlag] = usePersistedState('short-term:adjustFlag', 2);
+    const [date, setDate] = usePersistedState('short-term:date', '');
+    const [keyword, setKeyword] = usePersistedState('short-term:keyword', '');
+    const [queryKeyword, setQueryKeyword] = usePersistedState('short-term:queryKeyword', '');
+    const [minProbability, setMinProbability] = usePersistedState('short-term:minProbability', '');
+    const [sortBy, setSortBy] = usePersistedState('short-term:sortBy', 'score20');
+    const [sortDirection, setSortDirection] = usePersistedState('short-term:sortDirection', 'desc');
+    const [runId, setRunId] = usePersistedState('short-term:runId', '');
+    const [selectedCode, setSelectedCode] = usePersistedState('short-term:selectedCode', '');
+    const [page, setPage] = usePersistedState('short-term:page', 1);
+    const [size, setSize] = usePersistedState('short-term:size', 50);
     const [rebuilding, setRebuilding] = useState(false);
     const [evaluating, setEvaluating] = useState(false);
     const [actionMessage, setActionMessage] = useState('');

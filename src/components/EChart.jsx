@@ -7,6 +7,7 @@ import {
     DataZoomSliderComponent,
     GridComponent,
     LegendComponent,
+    MarkAreaComponent,
     TooltipComponent,
 } from 'echarts/components';
 import { CanvasRenderer } from 'echarts/renderers';
@@ -14,7 +15,7 @@ import { CanvasRenderer } from 'echarts/renderers';
 // 按需注册，避免把整包 ECharts 打进产物
 echarts.use([
     CandlestickChart, BarChart, LineChart,
-    GridComponent, TooltipComponent, LegendComponent,
+    GridComponent, TooltipComponent, LegendComponent, MarkAreaComponent,
     DataZoomInsideComponent, DataZoomSliderComponent, AxisPointerComponent,
     CanvasRenderer,
 ]);
