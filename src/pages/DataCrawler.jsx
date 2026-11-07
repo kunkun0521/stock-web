@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { usePersistedState } from '../hooks/usePersistedState.js';
 import { dataCrawlerApi } from '../api/dataCrawler.js';
 import { useApi } from '../hooks/useApi.js';
+import DecimalInput from '../components/DecimalInput.jsx';
 import ErrorBanner from '../components/ErrorBanner.jsx';
 import Panel from '../components/Panel.jsx';
 import StatCard from '../components/StatCard.jsx';
@@ -99,10 +100,10 @@ export default function DataCrawler() {
                         <input value={form.codePrefixes} onChange={(e) => update('codePrefixes', e.target.value)} placeholder="00,30,60"/>
                     </label>
                     <label className="field">最多股票数
-                        <input type="number" min="0" max="5000" value={form.limit} onChange={(e) => update('limit', e.target.value)}/>
+                        <DecimalInput value={form.limit} onChange={(value) => update('limit', value)}/>
                     </label>
                     <label className="field">回看自然日
-                        <input type="number" min="1" max="3650" value={form.daysBack} onChange={(e) => update('daysBack', e.target.value)}/>
+                        <DecimalInput value={form.daysBack} onChange={(value) => update('daysBack', value)}/>
                     </label>
                     <label className="field">主抓取复权
                         <select value={form.fqType} onChange={(e) => update('fqType', e.target.value)}>
@@ -112,7 +113,7 @@ export default function DataCrawler() {
                         </select>
                     </label>
                     <label className="field">请求间隔毫秒
-                        <input type="number" min="0" max="10000" value={form.requestDelayMillis} onChange={(e) => update('requestDelayMillis', e.target.value)}/>
+                        <DecimalInput value={form.requestDelayMillis} onChange={(value) => update('requestDelayMillis', value)}/>
                     </label>
                     <label className="crawler-check">
                         <input type="checkbox" checked={form.storeRawPrices} onChange={(e) => update('storeRawPrices', e.target.checked)}/>

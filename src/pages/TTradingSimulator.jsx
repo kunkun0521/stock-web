@@ -3,6 +3,7 @@ import { tTradingApi } from '../api/tTrading.js';
 import { stockApi } from '../api/stock.js';
 import { useApi } from '../hooks/useApi.js';
 import { usePersistedState } from '../hooks/usePersistedState.js';
+import DecimalInput from '../components/DecimalInput.jsx';
 import EChart from '../components/EChart.jsx';
 import ErrorBanner from '../components/ErrorBanner.jsx';
 import Panel from '../components/Panel.jsx';
@@ -174,6 +175,25 @@ const signed = (value, digits = 2) => (value === null || value === undefined || 
     ? '-'
     : formatPct(value, digits);
 
+/**
+ * 数字输入改为文本框后，统一在这里把字符串转成请求参数：
+ * 中间态（如 "1439."）正常转数值，空值与非法值给出可操作的中文提示，
+ * 避免把 NaN / 0 悄悄发给后端。
+ */
+const parseAmount = (raw, label, { optional = false, allowZero = false } = {}) => {
+    const text = String(raw ?? '').trim();
+    if (!text) {
+        if (optional) return undefined;
+        throw new Error(`${label}不能为空`);
+    }
+    const value = Number(text);
+    if (!Number.isFinite(value)) throw new Error(`${label}必须是有效数字`);
+    if (allowZero ? value < 0 : value <= 0) {
+        throw new Error(`${label}必须${allowZero ? '为非负数' : '大于 0'}`);
+    }
+    return value;
+};
+
 export default function TTradingSimulator() {
     // 表单、策略参数、模拟结果与面板状态都随会话保存：切到其他页面再回来原样还原
     const [form, setForm] = usePersistedState(STATE_KEY.form, DEFAULT_FORM);
@@ -267,7 +287,10 @@ export default function TTradingSimulator() {
     const buildStrategy = (source = strategy) => {
         const payload = {};
         PARAM_GROUPS.forEach((group) => group.items.forEach((item) => {
-            const shown = Number(source[item.key]);
+            const raw = source[item.key];
+            // 清空时不覆盖后端默认参数；"3." 这类中间态由 Number() 自然转成 3
+            if (raw === '' || raw === null || raw === undefined) return;
+            const shown = Number(raw);
             if (!Number.isFinite(shown)) return;
             payload[item.key] = item.factor === 1 ? shown : shown / item.factor;
         }));
@@ -286,10 +309,13 @@ export default function TTradingSimulator() {
                 code: targetForm.code.trim(),
                 buyDate: targetForm.buyDate || undefined,
                 endDate: targetForm.endDate || undefined,
-                totalCapital: Number(targetForm.totalCapital),
-                availableCash: Number(targetForm.availableCash),
-                initialShares: Number(targetForm.initialShares) || 0,
-                initialAvgCost: targetForm.initialAvgCost ? Number(targetForm.initialAvgCost) : undefined,
+                totalCapital: parseAmount(targetForm.totalCapital, '总资金'),
+                availableCash: parseAmount(targetForm.availableCash, '可支配资金'),
+                initialShares: parseAmount(targetForm.initialShares, '已有底仓',
+                    { optional: true, allowZero: true }) ?? 0,
+                // 成本价留空或填 0 都走后端「按买入日收盘价推定」
+                initialAvgCost: parseAmount(targetForm.initialAvgCost, '底仓成本价',
+                    { optional: true, allowZero: true }) || undefined,
                 adjustFlag: Number(targetForm.adjustFlag),
                 priceMode: targetForm.priceMode,
                 strategy: buildStrategy(targetStrategy),
@@ -347,11 +373,7 @@ export default function TTradingSimulator() {
     return (
         <div className="score-page t-page">
             <div className="page-intro">
-                <div>
-                    <h1>做T + 成本摊薄模拟</h1>
-                    <p>默认展示贵州茅台（600519）1000 股底仓，附日K线与买卖点；鼠标停在参数旁的问号上可看口径说明，切到其他页面再回来参数与结果都会保留。</p>
-                </div>
-                <span className="strategy-badge t-badge">规则回放 · 不构成投资建议</span>
+                <h1>做T模型</h1>
             </div>
 
             <Panel title="模拟参数" className={paramsOpen ? '' : 't-panel-collapsed'} extra={
@@ -416,21 +438,21 @@ export default function TTradingSimulator() {
                                 <input type="date" value={form.endDate} onChange={(e) => update('endDate', e.target.value)}/>
                             </label>
                             <label className="field"><ParamLabel tip={FORM_TIPS.totalCapital}>总资金（元）</ParamLabel>
-                                <input type="number" min="0" step="1000" value={form.totalCapital}
-                                       onChange={(e) => update('totalCapital', e.target.value)}/>
+                                <DecimalInput step="1000" value={form.totalCapital}
+                                              onChange={(value) => update('totalCapital', value)}/>
                             </label>
                             <label className="field"><ParamLabel tip={FORM_TIPS.availableCash}>可支配资金（元）</ParamLabel>
-                                <input type="number" min="0" step="1000" value={form.availableCash}
-                                       onChange={(e) => update('availableCash', e.target.value)}/>
+                                <DecimalInput step="1000" value={form.availableCash}
+                                              onChange={(value) => update('availableCash', value)}/>
                             </label>
                             <label className="field"><ParamLabel tip={FORM_TIPS.initialShares}>已有底仓（股）</ParamLabel>
-                                <input type="number" min="0" step="100" value={form.initialShares}
-                                       onChange={(e) => update('initialShares', e.target.value)}/>
+                                <DecimalInput step="100" value={form.initialShares}
+                                              onChange={(value) => update('initialShares', value)}/>
                             </label>
                             <label className="field"><ParamLabel tip={FORM_TIPS.initialAvgCost}>底仓成本价（元）</ParamLabel>
-                                <input type="number" min="0" step="0.001" value={form.initialAvgCost}
-                                       placeholder="留空按买入日收盘价推定"
-                                       onChange={(e) => update('initialAvgCost', e.target.value)}/>
+                                <DecimalInput step="0.01" value={form.initialAvgCost}
+                                              placeholder="留空按买入日收盘价推定"
+                                              onChange={(value) => update('initialAvgCost', value)}/>
                             </label>
                             <label className="field"><ParamLabel tip={FORM_TIPS.adjustFlag}>复权口径</ParamLabel>
                                 <select value={form.adjustFlag} onChange={(e) => update('adjustFlag', e.target.value)}>
@@ -455,7 +477,6 @@ export default function TTradingSimulator() {
                                         {preset.label}
                                     </button>
                                 ))}
-                                <span className="t-presets-note">结束日期默认未来一个月</span>
                             </div>
                         </div>
 
@@ -468,13 +489,11 @@ export default function TTradingSimulator() {
                                             {group.items.map((item) => (
                                                 <label className="field" key={item.key}>
                                                     <ParamLabel tip={item.tip}>{item.label}（{item.unit}）</ParamLabel>
-                                                    <input
-                                                        type="number"
+                                                    <DecimalInput
                                                         step={item.step}
-                                                        min={item.min}
-                                                        max={item.max}
+                                                        allowNegative={item.min < 0}
                                                         value={strategy[item.key] ?? ''}
-                                                        onChange={(e) => updateParam(item.key, e.target.value)}
+                                                        onChange={(value) => updateParam(item.key, value)}
                                                     />
                                                 </label>
                                             ))}
@@ -500,9 +519,6 @@ export default function TTradingSimulator() {
                             <button type="button" className="score-rebuild" onClick={() => run()} disabled={running}>
                                 {running ? '模拟中…' : '开始模拟'}
                             </button>
-                            <span className="muted t-form-hint">
-                                结束日期超出库内行情时，实际回放至最新交易日（结果中显示真实区间）；买入日前额外读取 75 个自然日用于指标预热。
-                            </span>
                         </div>
                     </>
                 ) : (
@@ -572,9 +588,6 @@ export default function TTradingSimulator() {
                                 <button type="button"
                                         className={`t-preset-btn ${effectiveChartMode === 'line' ? 'active' : ''}`}
                                         onClick={() => setChartMode('line')}>折线</button>
-                                <span className="muted">
-                                    {effectiveChartMode === 'kline' ? '红涨绿跌 · 紫区为回放区间' : '紫线为摊薄成本，红三角买入、绿标记卖出'}
-                                </span>
                             </div>
                         }>
                             <EChart option={priceOption} height={230}
@@ -597,7 +610,7 @@ export default function TTradingSimulator() {
                                     <button type="button" className="ghost" disabled={logPage >= logPages - 1}
                                             onClick={() => setLogPage((p) => p + 1)}>下一页</button>
                                 </div>
-                            ) : <span className="muted">共 {trades.length} 笔</span>
+                            ) : null
                         }>
                             <div className="table-wrap t-log-wrap">
                                 <table className="data-table t-log-table">
@@ -631,9 +644,7 @@ export default function TTradingSimulator() {
                             </div>
                         </Panel>
 
-                        <Panel title="下一步操作建议" extra={
-                            <span className="muted">条件单口径 · 悬停查看详情</span>
-                        }>
+                        <Panel title="下一步操作建议">
                             <div className="t-advice-grid t-advice-compact">
                                 {advices.map((item, index) => (
                                     <div className={`t-advice t-advice-${ACTION_TONE[item.action] || 'hold'}`}
