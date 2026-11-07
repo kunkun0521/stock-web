@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { marketApi } from '../api/market.js';
 import { useApi } from '../hooks/useApi.js';
@@ -29,16 +29,25 @@ export default function MarketDashboard() {
     const [dim, setDim] = useState('board');
     const [rankType, setRankType] = useState('gainers');
 
-    const calendar = useApi(() => marketApi.calendar(60), []);
-    const overview = useApi(() => marketApi.overview(date || undefined), [date]);
-    const distribution = useApi(() => marketApi.distribution(date || undefined), [date]);
-    const sectors = useApi(() => marketApi.sectors({ dimension: dim, date: date || undefined, limit: 15 }), [date, dim]);
-    const ranking = useApi(() => marketApi.ranking({ type: rankType, date: date || undefined, limit: 30 }), [date, rankType]);
-    const breadth = useApi(() => marketApi.breadth({ days: 60 }), []);
+    const day = date || 'latest';
+    const calendar = useApi(() => marketApi.calendar(60), [], { cacheKey: 'market:calendar:60' });
+    const overview = useApi(() => marketApi.overview(date || undefined), [date], { cacheKey: `market:overview:${day}` });
+    const distribution = useApi(() => marketApi.distribution(date || undefined), [date], { cacheKey: `market:distribution:${day}` });
+    const sectors = useApi(() => marketApi.sectors({ dimension: dim, date: date || undefined, limit: 15 }), [date, dim], { cacheKey: `market:sectors:${dim}:${day}` });
+    const ranking = useApi(() => marketApi.ranking({ type: rankType, date: date || undefined, limit: 30 }), [date, rankType], { cacheKey: `market:ranking:${rankType}:${day}` });
+    const breadth = useApi(() => marketApi.breadth({ days: 60 }), [], { cacheKey: 'market:breadth:60' });
 
     const ov = overview.data;
     const failed = [calendar, overview, distribution, sectors, ranking, breadth].filter((r) => r.error);
     const errorText = failed.map((r) => r.error).join('；');
+
+    // option 只在各自数据变化时重建，避免任一接口返回就连带三张图全部重绘
+    const distOpt = useMemo(() => distributionOption(distribution.data), [distribution.data]);
+    const sectorOpt = useMemo(() => sectorOption(sectors.data), [sectors.data]);
+    const breadthOpt = useMemo(() => breadthOption(breadth.data), [breadth.data]);
+
+    const reloadAll = () => [calendar, overview, distribution, sectors, ranking, breadth]
+        .forEach((r) => r.reload());
 
     return (
         <>
@@ -50,7 +59,7 @@ export default function MarketDashboard() {
                         {(calendar.data ?? []).map((d) => <option key={d} value={d}>{d}</option>)}
                     </select>
                 </label>
-                <button type="button" className="ghost" onClick={overview.reload}>刷新</button>
+                <button type="button" className="ghost" onClick={reloadAll}>刷新</button>
             </div>
 
             <ErrorBanner
@@ -80,7 +89,7 @@ export default function MarketDashboard() {
                 <Panel title="涨跌幅分布">
                     <EChart
                         height={300}
-                        option={distributionOption(distribution.data)}
+                        option={distOpt}
                         loading={distribution.loading}
                         empty={!distribution.loading && !(distribution.data?.buckets?.length)}
                     />
@@ -92,7 +101,7 @@ export default function MarketDashboard() {
                 >
                     <EChart
                         height={300}
-                        option={sectorOption(sectors.data)}
+                        option={sectorOpt}
                         loading={sectors.loading}
                         empty={!sectors.loading && !(sectors.data?.length)}
                         emptyText={dim === 'industry' ? '行业数据为空（stock_info.industry 尚未导入）' : '暂无数据'}
@@ -143,7 +152,7 @@ export default function MarketDashboard() {
             <Panel title="市场宽度（近 60 个交易日）">
                 <EChart
                     height={300}
-                    option={breadthOption(breadth.data)}
+                    option={breadthOpt}
                     loading={breadth.loading}
                     empty={!breadth.loading && !(breadth.data?.length)}
                 />

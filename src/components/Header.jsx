@@ -49,6 +49,7 @@ export default function Header() {
                 <NavLink to="/stocks">股票列表</NavLink>
                 <NavLink to="/scores">量化评分</NavLink>
                 <NavLink to="/short-term">短期预测</NavLink>
+                <NavLink to="/forecast">模型预测</NavLink>
                 <NavLink to="/data-crawler">数据抓取</NavLink>
             </nav>
             <div className="search-box" ref={boxRef}>

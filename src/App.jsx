@@ -5,6 +5,7 @@ import StockList from './pages/StockList.jsx';
 import StockDetail from './pages/StockDetail.jsx';
 import ScoreRanking from './pages/ScoreRanking.jsx';
 import ShortTermForecast from './pages/ShortTermForecast.jsx';
+import ForecastDashboard from './pages/ForecastDashboard.jsx';
 import DataCrawler from './pages/DataCrawler.jsx';
 
 function NotFound() {
@@ -27,6 +28,7 @@ export default function App() {
                     <Route path="/stocks/:code" element={<StockDetail/>}/>
                     <Route path="/scores" element={<ScoreRanking/>}/>
                     <Route path="/short-term" element={<ShortTermForecast/>}/>
+                    <Route path="/forecast" element={<ForecastDashboard/>}/>
                     <Route path="/data-crawler" element={<DataCrawler/>}/>
                     <Route path="*" element={<NotFound/>}/>
                 </Routes>

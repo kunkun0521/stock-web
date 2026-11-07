@@ -206,6 +206,82 @@ export function breadthOption(list) {
     };
 }
 
+/** 模型 RankIC 走势：单日 RankIC 柱状 + 20 批滚动均值折线 */
+export function rankIcOption(list) {
+    const rows = [...(list ?? [])].reverse(); // 接口倒序返回，图表按时间正序
+    const rankIcs = rows.map((r) => r.rankIc);
+    const rollMean = rankIcs.map((_, i) => {
+        const win = rankIcs.slice(Math.max(0, i - 19), i + 1).filter((v) => v != null);
+        return win.length ? win.reduce((a, b) => a + b, 0) / win.length : null;
+    });
+    return {
+        grid: { left: 52, right: 16, top: 28, bottom: 44 },
+        tooltip: { trigger: 'axis' },
+        legend: { ...LEGEND_STYLE, left: 'center' },
+        xAxis: {
+            type: 'category', data: rows.map((r) => r.asofDate),
+            axisLabel: { color: MUTED, fontSize: 10 }, axisLine: AXIS_LINE,
+        },
+        yAxis: {
+            type: 'value', name: 'RankIC', nameTextStyle: { color: MUTED, fontSize: 11 },
+            axisLabel: { color: MUTED }, splitLine: SPLIT_LINE,
+        },
+        series: [
+            {
+                name: '单日 RankIC', type: 'bar', barMaxWidth: 10,
+                data: rankIcs.map((v) => ({
+                    value: v,
+                    itemStyle: { color: v >= 0 ? `${UP}99` : `${DOWN}99` },
+                })),
+            },
+            {
+                name: '20 批滚动均值', type: 'line', smooth: true, showSymbol: false,
+                data: rollMean, lineStyle: { width: 1.6, color: '#2f6fed' },
+                itemStyle: { color: '#2f6fed' },
+                markLine: {
+                    silent: true, symbol: 'none',
+                    lineStyle: { color: MUTED, type: 'dashed', width: 1 },
+                    data: [{ yAxis: 0 }],
+                },
+            },
+        ],
+    };
+}
+
+/** 融合权重横向条形图 */
+export function weightOption(list) {
+    const rows = [...(list ?? [])].reverse();
+    return {
+        grid: { left: 130, right: 52, top: 10, bottom: 20 },
+        tooltip: {
+            trigger: 'axis', axisPointer: { type: 'shadow' },
+            formatter: (params) => {
+                const item = rows[params[0].dataIndex];
+                return `<b>${item.modelId}</b><br/>权重：${(Number(item.weight) * 100).toFixed(1)}%<br/>ICIR(60批)：${item.icir60 ?? '-'}`;
+            },
+        },
+        xAxis: {
+            type: 'value', axisLabel: { color: MUTED, fontSize: 10, formatter: (v) => `${(v * 100).toFixed(0)}%` },
+            splitLine: SPLIT_LINE,
+        },
+        yAxis: {
+            type: 'category', data: rows.map((w) => w.modelId),
+            axisLabel: { color: MUTED, fontSize: 11 }, axisLine: AXIS_LINE, axisTick: { show: false },
+        },
+        series: [{
+            type: 'bar', barMaxWidth: 18,
+            data: rows.map((w) => ({
+                value: w.weight,
+                itemStyle: { color: '#2f6fed', borderRadius: 3 },
+            })),
+            label: {
+                show: true, position: 'right', color: MUTED, fontSize: 10,
+                formatter: (p) => `${(Number(p.value) * 100).toFixed(1)}%`,
+            },
+        }],
+    };
+}
+
 /** 日线区间收盘价走势（详情页小图，可选） */
 export function closeLineOption(bars) {
     const rows = bars ?? [];

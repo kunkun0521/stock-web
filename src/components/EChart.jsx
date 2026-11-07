@@ -45,8 +45,8 @@ export default function EChart({ option, height = 320, empty, loading, emptyText
 
     useEffect(() => {
         if (chartRef.current && option) {
+            // 尺寸自适应由上面的 ResizeObserver 负责，这里无需再手动 resize
             chartRef.current.setOption(option, true);
-            chartRef.current.resize();
         }
     }, [option]);
 
