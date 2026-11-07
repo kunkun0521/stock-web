@@ -1338,13 +1338,7 @@ button.ghost {
     }
 }
 
-/* ---------- 做T + 成本摊薄模拟 ---------- */
-.t-badge {
-    color: #6b3fa0;
-    background: #f3edff;
-    border-color: #e2d4ff;
-}
-
+/* ---------- 做T模型 ---------- */
 .t-form {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
@@ -1372,10 +1366,6 @@ button.ghost {
     flex-wrap: wrap;
     gap: 12px;
     margin-top: 14px;
-}
-
-.t-form-hint {
-    font-size: 12px;
 }
 
 .t-param-groups {
@@ -1577,7 +1567,7 @@ button.ghost {
     }
 }
 
-/* ---------- 做T模拟：一屏紧凑布局 ---------- */
+/* ---------- 做T模型：一屏紧凑布局 ---------- */
 .t-page {
     gap: 6px;
 }
@@ -1609,15 +1599,6 @@ button.ghost {
 .t-page .page-intro h1 {
     margin-bottom: 0;
     font-size: 17px;
-}
-
-.t-page .page-intro p {
-    font-size: 11px;
-}
-
-.t-page .strategy-badge {
-    padding: 3px 9px;
-    font-size: 10px;
 }
 
 /* 结果态参数面板压成一条摘要，省下一整个面板标题行 */
@@ -1757,10 +1738,6 @@ button.ghost {
     font-weight: 600;
 }
 
-.t-presets-note {
-    margin-left: auto;
-}
-
 .t-param-brief {
     display: flex;
     align-items: center;
@@ -1781,10 +1758,6 @@ button.ghost {
 .t-form-actions {
     margin-top: 10px;
     gap: 10px;
-}
-
-.t-form-hint {
-    font-size: 11px;
 }
 
 /* 结果区：摘要 + 统计卡 + 双图表 + 日志/建议 */
@@ -1964,10 +1937,6 @@ button.ghost {
         flex-direction: column;
         align-items: flex-start;
     }
-
-    .t-presets-note {
-        margin-left: 0;
-    }
 }
 
 /* ---------- 参数悬停提示（表单标签旁的小问号） ---------- */
@@ -2059,9 +2028,4 @@ button.ghost {
 
 .t-chart-switch .t-preset-btn {
     padding: 2px 9px;
-}
-
-.t-chart-switch .muted {
-    font-size: 11px;
-    white-space: nowrap;
 }

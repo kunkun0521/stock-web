@@ -18,7 +18,7 @@ const NAV_ITEMS = [
     { to: '/scores', label: '量化评分', icon: 'M12 3l2.7 5.5 6 .9-4.3 4.2 1 6-5.4-2.8-5.4 2.8 1-6L3.3 9.4l6-.9z' },
     { to: '/short-term', label: '短期预测', icon: 'M13 2L4 14h7l-1 8 9-12h-7z' },
     { to: '/forecast', label: '模型预测', icon: 'M5 5h14v14H5z M9 9h6v6H9z M9 1v4 M15 1v4 M9 19v4 M15 19v4 M1 9h4 M1 15h4 M19 9h4 M19 15h4' },
-    { to: '/t-trading', label: '做T模拟', icon: 'M20 8H9a4 4 0 0 0 0 8h3 M17 5l3 3-3 3 M4 16h11a4 4 0 0 0 0-8H9 M7 13l-3 3 3 3' },
+    { to: '/t-trading', label: '做T模型', icon: 'M20 8H9a4 4 0 0 0 0 8h3 M17 5l3 3-3 3 M4 16h11a4 4 0 0 0 0-8H9 M7 13l-3 3 3 3' },
     { to: '/data-crawler', label: '数据抓取', icon: 'M12 3v12 M7 10l5 5 5-5 M4 20h16' },
 ];
 
@@ -94,8 +94,8 @@ export default function Sidebar({ onNavigate }) {
             <div className="sidebar-brand">
                 <span className="sidebar-logo">S</span>
                 <div>
-                    <div className="sidebar-brand-title">股票数据可视化</div>
-                    <div className="sidebar-brand-sub">Stock Analytics</div>
+                    <div className="sidebar-brand-title">股票数据量化平台</div>
+                    <div className="sidebar-brand-sub">Stock Data Quant Platform</div>
                 </div>
             </div>
             <div className="sidebar-section">功能导航</div>

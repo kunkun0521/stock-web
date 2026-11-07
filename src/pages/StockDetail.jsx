@@ -24,7 +24,7 @@ const BACK_LABEL = {
     '/scores': '返回量化评分',
     '/forecast': '返回模型预测',
     '/short-term': '返回短线预测',
-    '/t-trading': '返回做T模拟',
+    '/t-trading': '返回做T模型',
     '/data-crawler': '返回数据同步',
 };
 

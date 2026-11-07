@@ -16,7 +16,7 @@ const PAGE_TITLES = {
     '/scores': '量化评分',
     '/short-term': '短期预测',
     '/forecast': '模型预测',
-    '/t-trading': '做T模拟',
+    '/t-trading': '做T模型',
     '/data-crawler': '数据抓取',
 };
 
