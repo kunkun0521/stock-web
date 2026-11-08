@@ -8,6 +8,7 @@ import ScoreRanking from './pages/ScoreRanking.jsx';
 import ShortTermForecast from './pages/ShortTermForecast.jsx';
 import ForecastDashboard from './pages/ForecastDashboard.jsx';
 import TTradingSimulator from './pages/TTradingSimulator.jsx';
+import TLabPage from './tlab/TLabPage.jsx';
 import DataCrawler from './pages/DataCrawler.jsx';
 
 const PAGE_TITLES = {
@@ -17,6 +18,7 @@ const PAGE_TITLES = {
     '/short-term': '短期预测',
     '/forecast': '模型预测',
     '/t-trading': '做T模型',
+    '/t-lab': '回本实验室',
     '/data-crawler': '数据抓取',
 };
 
@@ -78,6 +80,7 @@ export default function App() {
                         <Route path="/short-term" element={<ShortTermForecast/>}/>
                         <Route path="/forecast" element={<ForecastDashboard/>}/>
                         <Route path="/t-trading" element={<TTradingSimulator/>}/>
+                        <Route path="/t-lab" element={<TLabPage/>}/>
                         <Route path="/data-crawler" element={<DataCrawler/>}/>
                         <Route path="*" element={<NotFound/>}/>
                     </Routes>
