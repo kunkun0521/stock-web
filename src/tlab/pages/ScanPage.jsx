@@ -4,18 +4,19 @@ import StockCodeInput, { resolveStock } from '../components/StockCodeInput.jsx';
 import { ErrorBanner, Loading, Panel, StatCard } from '../components/UI.jsx';
 import { scanBarOption } from '../charts.js';
 import { tLabApi as tApi } from '../../api/tLab.js';
+import { usePersistedState } from '../../hooks/usePersistedState.js';
 import { fmtNum, money, pct, toneClass } from '../utils.js';
 
 export default function ScanPage({ onJumpToSimulate }) {
-    const [form, setForm] = useState({
+    const [form, setForm] = usePersistedState('tlab:scan:form', {
         // 初始仓位 = totalCapital × initPositionRatio，需能买到 100 股整手，否则所有窗口都会「未建仓」
         code: '600519', stockName: '贵州茅台', totalCapital: '1000000', availableCash: '800000',
         holdDays: '20', initPositionRatio: '30', fromDate: '',
     });
-    const [result, setResult] = useState(null);
+    const [result, setResult] = usePersistedState('tlab:scan:result', null);
     const [running, setRunning] = useState(false);
     const [error, setError] = useState('');
-    const [featureFilter, setFeatureFilter] = useState('');
+    const [featureFilter, setFeatureFilter] = usePersistedState('tlab:scan:feature', '');
 
     const update = (k, v) => setForm((f) => ({ ...f, [k]: v }));
 

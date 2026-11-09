@@ -2,6 +2,7 @@ import { useState } from 'react';
 import SimulatePage from './pages/SimulatePage.jsx';
 import ScanPage from './pages/ScanPage.jsx';
 import PlanPage from './pages/PlanPage.jsx';
+import { usePersistedState } from '../hooks/usePersistedState.js';
 import './styles.css';
 
 const TABS = [
@@ -13,9 +14,10 @@ const TABS = [
 /**
  * 主站「回本实验室」页面：外壳只负责页签与状态中转，三个功能页保持挂载，
  * 切页/跳页不会丢失已输入的参数和结果。样式全部限定在 .tlab-root 内。
+ * 当前页签写入 sessionStorage：从侧栏切到别的页面再回来，仍停在原来的页签。
  */
 export default function TLabPage() {
-    const [tab, setTab] = useState('simulate');
+    const [tab, setTab] = usePersistedState('tlab:tab', 'simulate');
     const [jumpBuyDate, setJumpBuyDate] = useState('');
 
     const jumpToSimulate = (buyDate) => {

@@ -19,7 +19,7 @@ const NAV_ITEMS = [
     { to: '/short-term', label: '短期预测', icon: 'M13 2L4 14h7l-1 8 9-12h-7z' },
     { to: '/forecast', label: '模型预测', icon: 'M5 5h14v14H5z M9 9h6v6H9z M9 1v4 M15 1v4 M9 19v4 M15 19v4 M1 9h4 M1 15h4 M19 9h4 M19 15h4' },
     { to: '/t-trading', label: '做T模型', icon: 'M20 8H9a4 4 0 0 0 0 8h3 M17 5l3 3-3 3 M4 16h11a4 4 0 0 0 0-8H9 M7 13l-3 3 3 3' },
-    { to: '/t-lab', label: '回本实验室', icon: 'M3 17l5-6 4 3 5-8 4 4 M3 21h18 M17 6h4v4' },
+    { to: '/t-lab', label: '做T模型2', icon: 'M3 17l5-6 4 3 5-8 4 4 M3 21h18 M17 6h4v4' },
     { to: '/data-crawler', label: '数据抓取', icon: 'M12 3v12 M7 10l5 5 5-5 M4 20h16' },
 ];
 

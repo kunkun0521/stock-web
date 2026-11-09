@@ -4,6 +4,7 @@ import StockCodeInput, { resolveStock } from '../components/StockCodeInput.jsx';
 import { ErrorBanner, FieldLabel, Loading, Panel, StatCard } from '../components/UI.jsx';
 import { equityOption, klineOption } from '../charts.js';
 import { tLabApi as tApi } from '../../api/tLab.js';
+import { usePersistedState } from '../../hooks/usePersistedState.js';
 import { downloadCsv, fmtNum, money, pct, shiftDays, todayStr, toneClass } from '../utils.js';
 
 const DEFAULT_FORM = {
@@ -74,11 +75,12 @@ function formToPayload(form, overrides) {
 }
 
 export default function SimulatePage({ initialBuyDate, onConsumeInitial }) {
-    const [form, setForm] = useState(DEFAULT_FORM);
-    const [overrides, setOverrides] = useState({});
-    const [showAdvanced, setShowAdvanced] = useState(false);
+    // 参数与上次结果都写进 sessionStorage：切到其他页面（或刷新）再回来不会被清空
+    const [form, setForm] = usePersistedState('tlab:sim:form', DEFAULT_FORM);
+    const [overrides, setOverrides] = usePersistedState('tlab:sim:overrides', {});
+    const [showAdvanced, setShowAdvanced] = usePersistedState('tlab:sim:advanced', false);
     const [paramDefs, setParamDefs] = useState([]);
-    const [result, setResult] = useState(null);
+    const [result, setResult] = usePersistedState('tlab:sim:result', null);
     const [running, setRunning] = useState(false);
     const [error, setError] = useState('');
     const [actionFilter, setActionFilter] = useState('');

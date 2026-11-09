@@ -2,14 +2,15 @@ import { useState } from 'react';
 import StockCodeInput, { resolveStock } from '../components/StockCodeInput.jsx';
 import { ErrorBanner, Loading, Panel, StatCard } from '../components/UI.jsx';
 import { tLabApi as tApi } from '../../api/tLab.js';
+import { usePersistedState } from '../../hooks/usePersistedState.js';
 import { fmtNum, money, pct, toneClass } from '../utils.js';
 
 export default function PlanPage() {
-    const [form, setForm] = useState({
+    const [form, setForm] = usePersistedState('tlab:plan:form', {
         code: '600519', stockName: '贵州茅台', qty: '1000', sellableQty: '1000', avgCost: '1450',
         cash: '150000', totalCapital: '1600000', asOfDate: '',
     });
-    const [result, setResult] = useState(null);
+    const [result, setResult] = usePersistedState('tlab:plan:result', null);
     const [running, setRunning] = useState(false);
     const [error, setError] = useState('');
 

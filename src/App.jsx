@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Route, Routes, useLocation } from 'react-router-dom';
 import Sidebar, { StockSearch } from './components/Header.jsx';
+import LimitUpTicker from './components/LimitUpTicker.jsx';
 import MarketDashboard from './pages/MarketDashboard.jsx';
 import StockList from './pages/StockList.jsx';
 import StockDetail from './pages/StockDetail.jsx';
@@ -17,8 +18,8 @@ const PAGE_TITLES = {
     '/scores': '量化评分',
     '/short-term': '短期预测',
     '/forecast': '模型预测',
-    '/t-trading': '做T模型',
-    '/t-lab': '回本实验室',
+    '/t-trading': '做T模型1',
+    '/t-lab': '做T模型2',
     '/data-crawler': '数据抓取',
 };
 
@@ -71,6 +72,8 @@ export default function App() {
                         <span className="topbar-badge">仅供研究</span>
                     </div>
                 </header>
+                {/* 全站涨停播报：挂在路由之外，切页不卸载、参数与滚动状态保持 */}
+                <LimitUpTicker/>
                 <main className="container">
                     <Routes>
                         <Route path="/" element={<MarketDashboard/>}/>

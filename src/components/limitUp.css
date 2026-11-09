@@ -1,0 +1,459 @@
+/* 全站涨停播报条：类名统一 lu- 前缀，样式只作用在本组件内，不污染其它页面 */
+
+.lu-ticker {
+    position: sticky;
+    top: 58px;                 /* 顶栏高度，滚动时固定在顶栏下方 */
+    z-index: 15;
+    flex: 0 0 auto;
+    background: #fff8f7;
+    border-bottom: 1px solid #f6d4cf;
+    box-shadow: 0 2px 8px rgba(120, 40, 30, .04);
+}
+
+.lu-bar {
+    height: 38px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0 20px;
+    min-width: 0;
+}
+
+.lu-label {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding-right: 12px;
+    border-right: 1px solid #f0d7d2;
+    font-size: 12px;
+    font-weight: 650;
+    color: #a3271f;
+    white-space: nowrap;
+}
+
+.lu-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #d92b2b;
+    box-shadow: 0 0 0 3px rgba(217, 43, 43, .14);
+    flex: none;
+}
+
+.lu-date {
+    font-size: 10.5px;
+    font-weight: 400;
+    color: #a98a86;
+    font-variant-numeric: tabular-nums;
+}
+
+.lu-viewport {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    position: relative;
+    height: 38px;
+    display: flex;
+    align-items: center;
+}
+
+.lu-viewport::before,
+.lu-viewport::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 22px;
+    z-index: 2;
+    pointer-events: none;
+}
+
+.lu-viewport::before { left: 0; background: linear-gradient(90deg, #fff8f7, rgba(255, 248, 247, 0)); }
+.lu-viewport::after { right: 0; background: linear-gradient(270deg, #fff8f7, rgba(255, 248, 247, 0)); }
+
+.lu-track {
+    display: flex;
+    width: max-content;
+    animation: lu-scroll var(--lu-duration, 60s) linear infinite;
+    will-change: transform;
+}
+
+.lu-ticker.is-paused .lu-track { animation-play-state: paused; }
+
+@keyframes lu-scroll {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+}
+
+.lu-group {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding-right: 20px;
+    flex: none;
+}
+
+.lu-item {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 6px;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    color: #4a3b39;
+    font-size: 12px;
+    line-height: 1.3;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.lu-item:hover { background: #ffece9; color: #a3271f; }
+
+.lu-name { font-weight: 600; color: #2f2a29; }
+.lu-code { color: #a98a86; font-size: 10.5px; font-variant-numeric: tabular-nums; }
+.lu-price { color: #6b5b58; font-variant-numeric: tabular-nums; }
+.lu-pct { color: #d92b2b; font-weight: 650; font-variant-numeric: tabular-nums; }
+
+.lu-streak {
+    padding: 1px 5px;
+    border-radius: 4px;
+    background: #d92b2b;
+    color: #fff;
+    font-size: 10px;
+    font-weight: 600;
+}
+
+.lu-one {
+    padding: 1px 5px;
+    border-radius: 4px;
+    background: #fff0d9;
+    border: 1px solid #f3d6a0;
+    color: #9a5b00;
+    font-size: 10px;
+}
+
+.lu-message {
+    font-size: 11.5px;
+    color: #a98a86;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    white-space: nowrap;
+}
+
+.lu-controls {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding-left: 10px;
+    border-left: 1px solid #f0d7d2;
+}
+
+.lu-count {
+    font-size: 11px;
+    color: #a98a86;
+    white-space: nowrap;
+    margin-right: 2px;
+}
+
+.lu-count b { color: #d92b2b; font-size: 12px; }
+.lu-count i { font-style: normal; color: #d8c7c4; margin: 0 3px; }
+
+.lu-icon-btn {
+    width: 24px;
+    height: 24px;
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    background: transparent;
+    color: #a98a86;
+    font-size: 17px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.lu-icon-btn svg { width: 14px; height: 14px; }
+.lu-icon-btn:hover { color: #a3271f; background: #ffece9; border-color: #f6d4cf; }
+.lu-icon-btn:disabled { opacity: .45; cursor: default; }
+.lu-icon-btn.lu-fold { font-size: 16px; }
+
+.lu-detail-btn {
+    flex: none;
+    padding: 4px 10px;
+    border: 1px solid #f0c4bd;
+    border-radius: 6px;
+    background: #fff;
+    color: #a3271f;
+    font-size: 11.5px;
+    font-weight: 600;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.lu-detail-btn:hover, .lu-detail-btn.active { background: #d92b2b; border-color: #d92b2b; color: #fff; }
+.lu-detail-btn span { font-size: 9px; margin-left: 2px; }
+
+.lu-link {
+    border: 0;
+    background: transparent;
+    color: #a3271f;
+    font-size: 11.5px;
+    cursor: pointer;
+    padding: 0;
+}
+
+.lu-link:hover { text-decoration: underline; }
+
+/* ---------- 收起态：只保留一个可恢复的胶囊 ---------- */
+.lu-collapsed-wrap {
+    position: sticky;
+    top: 58px;
+    z-index: 15;
+    height: 0;
+    display: flex;
+    justify-content: flex-end;
+    padding-right: 20px;
+}
+
+.lu-restore {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 6px;
+    padding: 4px 10px;
+    border: 1px solid #f0c4bd;
+    border-radius: 999px;
+    background: #fff8f7;
+    color: #a3271f;
+    font-size: 11px;
+    box-shadow: 0 2px 8px rgba(120, 40, 30, .08);
+    cursor: pointer;
+}
+
+.lu-restore:hover { background: #ffece9; }
+.lu-restore strong { color: #d92b2b; }
+.lu-restore-arrow { font-size: 14px; line-height: 1; }
+
+/* ---------- 展开面板 ---------- */
+.lu-panel {
+    position: absolute;
+    top: calc(100% + 1px);
+    left: 50%;
+    transform: translateX(-50%);
+    width: min(1180px, calc(100% - 40px));
+    max-height: min(78vh, 700px);
+    overflow: auto;
+    background: #fff;
+    border: 1px solid #eed9d5;
+    border-radius: 0 0 10px 10px;
+    box-shadow: 0 14px 32px rgba(60, 30, 25, .13);
+    font-size: 12px;
+    color: #3a3331;
+}
+
+.lu-panel-head {
+    position: sticky;
+    top: 0;
+    z-index: 3;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 9px 14px;
+    background: #fff;
+    border-bottom: 1px solid #f2e4e1;
+}
+
+.lu-panel-head strong { font-size: 13px; color: #a3271f; }
+.lu-panel-sub { margin-left: 10px; font-size: 10.5px; color: #a98a86; }
+
+.lu-stat-row {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 8px;
+    padding: 10px 14px 4px;
+}
+
+.lu-stat {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 7px 10px;
+    border: 1px solid #f4e5e2;
+    border-radius: 8px;
+    background: #fffaf9;
+}
+
+.lu-stat span { font-size: 10.5px; color: #a98a86; }
+.lu-stat b { font-size: 15px; font-variant-numeric: tabular-nums; }
+.lu-stat b.up { color: #d92b2b; }
+
+.lu-dist-row {
+    display: grid;
+    grid-template-columns: 1fr 1.2fr .8fr;
+    gap: 10px;
+    padding: 4px 14px 10px;
+}
+
+.lu-dist { min-width: 0; }
+.lu-dist-title { font-size: 11px; font-weight: 600; color: #6b5b58; margin-bottom: 5px; }
+.lu-dist-title small { font-weight: 400; color: #a98a86; font-size: 10px; }
+.lu-dist-body { display: flex; flex-wrap: wrap; gap: 5px; align-items: flex-start; }
+
+.lu-chip {
+    position: relative;
+    overflow: hidden;
+    padding: 3px 8px;
+    border: 1px solid #f0d7d2;
+    border-radius: 5px;
+    background: #fff8f7;
+    color: #6b5b58;
+    font-size: 11px;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.lu-chip b { color: #d92b2b; margin-left: 3px; }
+.lu-chip:hover { border-color: #d92b2b; }
+.lu-chip.active { background: #d92b2b; border-color: #d92b2b; color: #fff; }
+.lu-chip.active b { color: #fff; }
+.lu-chip.static { cursor: default; }
+.lu-chip.static:hover { border-color: #f0d7d2; }
+
+.lu-chip-bar {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    height: 2px;
+    background: #d92b2b;
+    opacity: .45;
+}
+
+.lu-empty { font-size: 11px; color: #b9a5a1; }
+
+.lu-toolbar {
+    position: sticky;
+    top: 39px;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    padding: 7px 14px;
+    background: #fff;
+    border-top: 1px solid #f2e4e1;
+    border-bottom: 1px solid #f2e4e1;
+}
+
+.lu-tabs { display: inline-flex; gap: 3px; padding: 2px; background: #f6f1ef; border-radius: 6px; }
+
+.lu-tabs button {
+    padding: 4px 10px;
+    border: 0;
+    border-radius: 5px;
+    background: transparent;
+    color: #8d7a76;
+    font-size: 11.5px;
+    cursor: pointer;
+}
+
+.lu-tabs button.active { background: #fff; color: #a3271f; font-weight: 600; box-shadow: 0 1px 3px rgba(0, 0, 0, .08); }
+
+.lu-search, .lu-select {
+    border: 1px solid #eadfdc;
+    border-radius: 6px;
+    padding: 4px 8px;
+    background: #fff;
+    color: #3a3331;
+    font-size: 11.5px;
+    outline: none;
+}
+
+.lu-search { width: 150px; }
+.lu-search:focus, .lu-select:focus { border-color: #d92b2b; }
+.lu-row-count { margin-left: auto; font-size: 10.5px; color: #a98a86; }
+
+/* 单一滚动区：面板本身一般不需要滚动，只有表格在这个区域内滚动，表头保持吸顶 */
+.lu-table-wrap { max-height: min(300px, 38vh); overflow: auto; }
+
+.lu-table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+
+.lu-table th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    padding: 6px 10px;
+    text-align: left;
+    font-size: 10.5px;
+    font-weight: 600;
+    color: #8d7a76;
+    background: #fffaf9;
+    border-bottom: 1px solid #f2e4e1;
+    white-space: nowrap;
+}
+
+.lu-table td {
+    padding: 6px 10px;
+    border-bottom: 1px solid #f7f0ee;
+    font-size: 11.5px;
+    white-space: nowrap;
+}
+
+.lu-table tbody tr { cursor: pointer; }
+.lu-table tbody tr:hover { background: #fff4f1; }
+.lu-table td.up { color: #d92b2b; font-weight: 600; }
+.lu-table .lu-code { margin-left: 6px; }
+.lu-empty-row { text-align: center !important; color: #b9a5a1; padding: 20px !important; }
+
+.lu-tag {
+    display: inline-block;
+    padding: 1px 5px;
+    margin-right: 3px;
+    border-radius: 4px;
+    font-size: 10px;
+}
+
+.lu-tag.one { background: #fff0d9; color: #9a5b00; }
+.lu-tag.st { background: #eef1f5; color: #6b7280; }
+.lu-tag.broken { background: #e8f5ec; color: #1b7f43; }
+.lu-table .muted { color: #c3b5b1; }
+
+.lu-foot {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 9px 14px 12px;
+    border-top: 1px solid #f2e4e1;
+    color: #a98a86;
+    font-size: 10.5px;
+    line-height: 1.6;
+}
+
+.lu-risk { flex: none; color: #9a5b00; white-space: nowrap; }
+
+@media (max-width: 1100px) {
+    .lu-stat-row { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .lu-dist-row { grid-template-columns: 1fr 1fr; }
+    .lu-panel { width: calc(100% - 20px); }
+    .lu-date, .lu-count { display: none; }
+}
+
+@media (max-width: 720px) {
+    .lu-label { border-right: 0; padding-right: 2px; }
+    .lu-dist-row { grid-template-columns: 1fr; }
+    .lu-stat-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .lu-search { width: 110px; }
+    .lu-row-count { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .lu-track { animation: none; }
+}
