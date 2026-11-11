@@ -1,0 +1,486 @@
+/* 量化评分规则说明：全部样式限定在 .srm- 前缀内，弹窗挂到 body，不参与原页面文档流 */
+
+.srm-trigger {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    background: #fff;
+    border: 1px solid #cddcf7;
+    color: var(--accent);
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.4;
+    white-space: nowrap;
+}
+
+.srm-trigger:hover {
+    background: #eef4ff;
+    border-color: var(--accent);
+    filter: none;
+}
+
+.srm-trigger-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.srm-mask {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background: rgba(17, 24, 39, .46);
+    animation: srm-fade .16s ease-out;
+}
+
+@keyframes srm-fade {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.srm-dialog {
+    display: flex;
+    flex-direction: column;
+    width: min(960px, 94vw);
+    max-height: min(88vh, 900px);
+    overflow: hidden;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    box-shadow: 0 18px 60px rgba(15, 23, 42, .28);
+    color: var(--text);
+    font-size: 13px;
+    line-height: 1.65;
+}
+
+.srm-head {
+    flex: none;
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    padding: 16px 22px 13px;
+    border-bottom: 1px solid var(--border);
+    background: linear-gradient(180deg, #f8faff, #fff);
+}
+
+.srm-head h2 {
+    margin: 0 0 3px;
+    font-size: 17px;
+    font-weight: 700;
+}
+
+.srm-head p {
+    margin: 0;
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.srm-close,
+.srm-foot-btn {
+    flex: none;
+    padding: 6px 16px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: #fff;
+    color: var(--text);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.srm-close {
+    margin-left: auto;
+}
+
+.srm-close:hover,
+.srm-foot-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    filter: none;
+}
+
+.srm-tabs {
+    flex: none;
+    display: flex;
+    gap: 4px;
+    padding: 8px 22px 0;
+    border-bottom: 1px solid var(--border);
+    overflow-x: auto;
+}
+
+.srm-tabs button {
+    flex: none;
+    padding: 7px 16px 9px;
+    border: none;
+    border-bottom: 2px solid transparent;
+    border-radius: 0;
+    background: transparent;
+    color: var(--muted);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.srm-tabs button:hover {
+    color: var(--accent);
+    filter: none;
+}
+
+.srm-tabs button.active {
+    border-bottom-color: var(--accent);
+    color: var(--accent);
+}
+
+.srm-body {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 18px 22px 24px;
+}
+
+.srm-lead {
+    margin: 0 0 16px;
+    padding: 11px 14px;
+    border-left: 3px solid var(--accent);
+    border-radius: 0 8px 8px 0;
+    background: #f3f7ff;
+    font-size: 13px;
+}
+
+.srm-para {
+    margin: 0 0 14px;
+    color: #374151;
+}
+
+.srm-h3 {
+    margin: 20px 0 10px;
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.srm-body > .srm-h3:first-child {
+    margin-top: 2px;
+}
+
+.srm-body code {
+    padding: 1px 5px;
+    border-radius: 4px;
+    background: #f1f3f7;
+    color: #1f3a68;
+    font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+    font-size: 12px;
+    white-space: nowrap;
+}
+
+/* ---------- 流程步骤 ---------- */
+.srm-steps {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.srm-step {
+    display: flex;
+    gap: 11px;
+    padding: 12px 14px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: #fcfdff;
+}
+
+.srm-step-no {
+    flex: none;
+    width: 26px;
+    height: 26px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    background: #eaf1ff;
+    color: var(--accent);
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.srm-step strong {
+    display: block;
+    margin-bottom: 3px;
+    font-size: 13px;
+}
+
+.srm-step p {
+    margin: 0;
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.6;
+}
+
+/* ---------- 表格 ---------- */
+.srm-table-wrap {
+    overflow-x: auto;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+}
+
+.srm-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+    text-align: left;
+}
+
+.srm-table th,
+.srm-table td {
+    padding: 8px 11px;
+    border-bottom: 1px solid #eef0f4;
+    vertical-align: top;
+}
+
+.srm-table th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background: #f7f9fc;
+    color: #4b5563;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.srm-table tr:last-child td {
+    border-bottom: none;
+}
+
+.srm-table tbody tr:nth-child(even) {
+    background: #fcfdff;
+}
+
+.srm-table td:first-child {
+    white-space: nowrap;
+}
+
+.srm-table td:last-child {
+    min-width: 220px;
+    color: #4b5563;
+}
+
+.srm-table .srm-total td {
+    background: #f3f7ff;
+    font-weight: 600;
+}
+
+.srm-metric-table td:nth-child(2) {
+    min-width: 260px;
+}
+
+.srm-formula {
+    white-space: normal !important;
+    display: inline-block;
+    line-height: 1.6;
+}
+
+.srm-field {
+    display: block;
+    color: #98a1af;
+    font-family: Consolas, monospace;
+    font-size: 11px;
+    font-weight: 400;
+}
+
+.srm-footnote {
+    margin: 12px 0 0;
+    padding: 9px 12px;
+    border-radius: 8px;
+    background: #f7f8fa;
+    color: var(--muted);
+    font-size: 12px;
+}
+
+/* ---------- 分数怎么读 ---------- */
+.srm-notes {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.srm-note {
+    padding: 11px 13px;
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    background: #fff;
+}
+
+.srm-note strong {
+    font-size: 13px;
+}
+
+.srm-note p {
+    margin: 4px 0 0;
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.6;
+}
+
+/* ---------- 因子分组 ---------- */
+.srm-factor {
+    margin-bottom: 16px;
+}
+
+.srm-factor-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 5px;
+}
+
+.srm-factor-tag {
+    padding: 3px 11px;
+    border-radius: 999px;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.srm-tone-blue { background: #2f6fed; }
+.srm-tone-red { background: #d8392b; }
+.srm-tone-green { background: #0f8a62; }
+.srm-tone-purple { background: #8a5cd6; }
+.srm-tone-orange { background: #c47a12; }
+
+.srm-factor-meta {
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.srm-factor-intro {
+    margin: 0 0 8px;
+    color: #4b5563;
+    font-size: 12px;
+}
+
+/* ---------- 公式块 ---------- */
+.srm-formula-block {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 12px;
+    padding: 12px 15px;
+    border: 1px solid #d7e4ff;
+    border-radius: 10px;
+    background: #f5f9ff;
+}
+
+.srm-formula-block code {
+    padding: 0;
+    background: transparent;
+    color: #173f8a;
+    font-size: 12.5px;
+    white-space: normal;
+    word-break: break-word;
+}
+
+/* ---------- 权重条 ---------- */
+.srm-weights {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+.srm-weight {
+    display: grid;
+    grid-template-columns: 52px 1fr 44px 1.2fr;
+    align-items: center;
+    gap: 10px;
+    font-size: 12px;
+}
+
+.srm-weight-name {
+    font-weight: 600;
+}
+
+.srm-weight-track {
+    height: 8px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: #eef0f4;
+}
+
+.srm-weight-track i {
+    display: block;
+    height: 100%;
+    border-radius: 999px;
+}
+
+.srm-weight b {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+.srm-weight-desc {
+    color: var(--muted);
+}
+
+/* ---------- 其它 ---------- */
+.srm-list {
+    margin: 0;
+    padding-left: 20px;
+    color: #4b5563;
+    font-size: 12px;
+    line-height: 1.9;
+}
+
+.srm-disclaimer {
+    margin: 16px 0 0;
+    padding: 11px 14px;
+    border: 1px solid #f2d8b5;
+    border-radius: 9px;
+    background: #fff9ef;
+    color: #8a5a12;
+    font-size: 12px;
+}
+
+.srm-foot {
+    flex: none;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 10px 22px;
+    border-top: 1px solid var(--border);
+    background: #fafbfd;
+    color: var(--muted);
+    font-size: 11px;
+}
+
+.srm-foot-btn {
+    margin-left: auto;
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+}
+
+.srm-foot-btn:hover {
+    color: #fff;
+    filter: brightness(1.08);
+}
+
+@media (max-width: 860px) {
+    .srm-mask { padding: 12px; }
+    .srm-dialog { width: 100%; max-height: 94vh; }
+    .srm-head, .srm-tabs, .srm-body, .srm-foot { padding-left: 14px; padding-right: 14px; }
+    .srm-steps, .srm-notes { grid-template-columns: 1fr; }
+    .srm-weight { grid-template-columns: 52px 1fr 44px; }
+    .srm-weight-desc { display: none; }
+}

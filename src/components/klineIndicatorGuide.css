@@ -1,0 +1,193 @@
+/* K 线指标速查条：全部样式限定在 .sd-guide 内，不影响其它页面 */
+.sd-guide {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 8px 12px;
+}
+
+.sd-guide-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 24px;
+}
+
+.sd-guide-title {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    flex-wrap: wrap;
+    font-size: 12px;
+    min-width: 0;
+}
+
+.sd-guide-title b {
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.sd-guide-title .muted {
+    font-size: 11px;
+}
+
+.sd-guide-head .sd-link {
+    margin-left: auto;
+    flex: none;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    color: var(--accent);
+    padding: 2px 10px;
+    font-size: 11px;
+}
+
+.sd-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 7px;
+}
+
+.sd-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 2px 9px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: #fafbfc;
+    color: var(--text);
+    font-size: 11px;
+    line-height: 1.5;
+    white-space: nowrap;
+}
+
+.sd-chip b {
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.sd-chip span {
+    color: var(--muted);
+    font-size: 11px;
+}
+
+.sd-chip:hover,
+.sd-chip.active {
+    background: #eef4ff;
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+.sd-swatch {
+    display: inline-block;
+    width: 11px;
+    height: 3px;
+    border-radius: 2px;
+    flex: none;
+}
+
+.sd-explain {
+    margin-top: 9px;
+    padding-top: 9px;
+    border-top: 1px dashed var(--border);
+}
+
+.sd-group-tabs {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 8px;
+}
+
+.sd-group-tabs button {
+    padding: 2px 9px;
+    border-radius: 999px;
+    background: #fff;
+    border-color: var(--border);
+    color: var(--muted);
+    font-size: 11px;
+}
+
+.sd-group-tabs button.active {
+    background: #eef4ff;
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+.sd-guide-note {
+    margin-left: auto;
+    font-size: 11px;
+}
+
+/* 解释区自身限高滚动，展开后也不把整页撑长 */
+.sd-explain-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+    max-height: 292px;
+    overflow-y: auto;
+    padding-right: 2px;
+}
+
+.sd-explain-card {
+    min-width: 0;
+    padding: 8px 10px;
+    background: #fafbfc;
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    cursor: pointer;
+}
+
+.sd-explain-card:hover,
+.sd-explain-card.active {
+    background: #f2f7ff;
+    border-color: var(--accent);
+}
+
+.sd-explain-card strong {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 5px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.sd-explain-card code {
+    display: block;
+    margin-bottom: 5px;
+    padding: 3px 6px;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--accent);
+    font-size: 11px;
+    white-space: normal;
+    line-height: 1.45;
+}
+
+.sd-explain-card span {
+    display: block;
+    color: var(--muted);
+    font-size: 11px;
+    line-height: 1.55;
+}
+
+@media (max-width: 1100px) {
+    .sd-explain-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 700px) {
+    .sd-explain-grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .sd-guide-note {
+        margin-left: 0;
+    }
+}

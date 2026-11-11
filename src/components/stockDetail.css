@@ -1,0 +1,172 @@
+/* 股票详情页紧凑布局：全部限定 .sd-root，避免影响其它页面的同名全局类 */
+.sd-root {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-width: 0;
+}
+
+.sd-root .detail-head {
+    padding: 10px 14px;
+    gap: 12px;
+}
+
+.sd-root .detail-title {
+    font-size: 18px;
+    margin: 2px 0 4px;
+}
+
+.sd-root .big {
+    font-size: 26px;
+}
+
+.sd-root .big-sub {
+    font-size: 13px;
+}
+
+.sd-root .tags {
+    gap: 5px;
+}
+
+.sd-root .tag {
+    padding: 1px 7px;
+    font-size: 11px;
+}
+
+/* 十项盘面指标压成一行，不再单独占一张两行高的卡片 */
+.sd-root .metric-grid {
+    grid-template-columns: repeat(10, minmax(0, 1fr));
+    gap: 3px 10px;
+    padding: 8px 14px;
+}
+
+.sd-root .metric-label {
+    font-size: 11px;
+    white-space: nowrap;
+}
+
+.sd-root .metric-value {
+    font-size: 12px;
+    white-space: nowrap;
+}
+
+.sd-root .panel {
+    padding: 10px 12px;
+}
+
+.sd-root .panel-head {
+    margin-bottom: 6px;
+    gap: 8px;
+}
+
+.sd-root .panel-head h2 {
+    font-size: 13px;
+}
+
+.sd-root .stat-grid {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 8px;
+}
+
+.sd-root .stat-card {
+    padding: 8px 10px;
+}
+
+.sd-root .stat-label {
+    font-size: 11px;
+}
+
+.sd-root .stat-value {
+    font-size: 17px;
+    margin-top: 0;
+}
+
+.sd-root .stat-hint {
+    font-size: 10px;
+    margin-top: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* 日线明细：用户关注度低，展开后也限制在较小的固定区域里滚动 */
+.sd-root .table-wrap {
+    max-height: 220px;
+}
+
+.sd-root .data-table th,
+.sd-root .data-table td {
+    padding: 4px 7px;
+    font-size: 12px;
+}
+
+.sd-root .pagination {
+    margin-top: 6px;
+    gap: 8px;
+    font-size: 12px;
+}
+
+.sd-root .pager-buttons button {
+    padding: 2px 8px;
+    font-size: 12px;
+}
+
+.sd-root .page-size {
+    font-size: 12px;
+}
+
+.sd-root .page-size select {
+    padding: 2px 4px;
+    font-size: 12px;
+}
+
+.sd-root .small {
+    font-size: 11px;
+}
+
+.sd-link {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    color: var(--accent);
+    padding: 2px 10px;
+    font-size: 11px;
+    white-space: nowrap;
+}
+
+.sd-link:hover {
+    border-color: var(--accent);
+}
+
+.sd-daily-panel.sd-collapsed .panel-head {
+    margin-bottom: 0;
+}
+
+.sd-daily-summary {
+    margin: 0;
+    line-height: 1.5;
+}
+
+.sd-daily-summary .sd-hit {
+    color: var(--text);
+}
+
+@media (max-width: 1100px) {
+    .sd-root .metric-grid {
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+    }
+
+    .sd-root .stat-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 700px) {
+    .sd-root .metric-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .sd-root .stat-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}

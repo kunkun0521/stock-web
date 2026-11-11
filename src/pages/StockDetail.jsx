@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { usePersistedState } from '../hooks/usePersistedState.js';
 import { useCurrentStock } from '../context/CurrentStockContext.jsx';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
@@ -6,18 +6,23 @@ import { stockApi } from '../api/stock.js';
 import { useApi } from '../hooks/useApi.js';
 import EChart from '../components/EChart.jsx';
 import ErrorBanner from '../components/ErrorBanner.jsx';
+import KlineIndicatorGuide from '../components/KlineIndicatorGuide.jsx';
 import Panel from '../components/Panel.jsx';
 import Pagination from '../components/Pagination.jsx';
 import StatCard from '../components/StatCard.jsx';
 import Tabs from '../components/Tabs.jsx';
 import { klineOption } from '../charts/options.js';
 import { formatAmount, formatNum, formatPct, formatPrice, formatVolume, pctClass } from '../utils/format.js';
+import '../components/stockDetail.css';
 
 const PERIOD_TABS = [
     { value: 'day', label: '日线' },
     { value: 'week', label: '周线' },
     { value: 'month', label: '月线' },
 ];
+
+/** K 线容器高度：主图、成交量、MACD 三块按此高度按比例分配 */
+const KLINE_HEIGHT = 560;
 
 /** 返回按钮文案：按"从哪个页面进来"给出明确去处 */
 const BACK_LABEL = {
@@ -46,7 +51,9 @@ export default function StockDetail() {
     const { setCurrentStock } = useCurrentStock();
     const [period, setPeriod] = usePersistedState(`stock-detail:${code}:period`, 'day');
     const [page, setPage] = usePersistedState(`stock-detail:${code}:page`, 1);
-    const size = 20;
+    // 日线明细关注度低：默认收起，展开后也只显示少量行；状态跨页面/刷新保持
+    const [dailyOpen, setDailyOpen] = usePersistedState('stock-detail:dailyOpen', false);
+    const [size, setSize] = usePersistedState('stock-detail:dailySize', 10);
 
     // 跳转来源由列表页通过 location.state.from 传入；back 是来源页的筛选状态，返回时原样带回
     const from = typeof location.state?.from === 'string' ? location.state.from : '';
@@ -71,7 +78,8 @@ export default function StockDetail() {
     const kline = useApi(() => stockApi.kline(code, { period, limit: 300 }), [code, period]);
     const stats = useApi(() => stockApi.stats(code), [code]);
     const range = useApi(() => stockApi.dataRange(code), [code]);
-    const daily = useApi(() => stockApi.daily(code, { page, size }), [code, page]);
+    const daily = useApi(() => stockApi.daily(code, { page, size }), [code, page, size]);
+    const klineOpt = useMemo(() => klineOption(kline.data, KLINE_HEIGHT), [kline.data]);
 
     // 行情名称回填到全站当前股票，顶栏与各页面输入框就能显示中文名
     useEffect(() => {
@@ -81,9 +89,12 @@ export default function StockDetail() {
     const q = quote.data;
     const st = stats.data;
     const failed = [quote, kline, stats, daily, range].filter((r) => r.error);
+    const rangeText = range.data
+        ? `数据覆盖：${range.data.firstDate ?? '-'} ~ ${range.data.lastDate ?? '-'} · 交易日 ${range.data.tradingDays} · 记录 ${range.data.rowCount} 行 · 复权口径 ${range.data.adjustFlags || '-'} · 来源 ${range.data.dataSources || '-'}`
+        : '';
 
     return (
-        <>
+        <div className="sd-root">
             <ErrorBanner
                 message={failed.map((r) => r.error).join('；')}
                 onRetry={failed.length ? () => failed.forEach((r) => r.reload()) : undefined}
@@ -133,13 +144,16 @@ export default function StockDetail() {
                 </div>
             ) : null}
 
+            {/* 指标解释放在 K 线上方：默认一行速查，展开后给出公式与用法 */}
+            <KlineIndicatorGuide/>
+
             <Panel
                 title={`K 线走势${kline.data ? `（${kline.data.startDate} ~ ${kline.data.endDate}，${kline.data.count} 根，复权 ${kline.data.adjustFlag ?? '-'}）` : ''}`}
                 extra={<Tabs items={PERIOD_TABS} value={period} onChange={setPeriod}/>}
             >
                 <EChart
-                    height={460}
-                    option={klineOption(kline.data)}
+                    height={KLINE_HEIGHT}
+                    option={klineOpt}
                     loading={kline.loading}
                     empty={!kline.loading && !kline.data?.count}
                     emptyText="该股票暂无行情，请先导入对应行情分表"
@@ -157,62 +171,75 @@ export default function StockDetail() {
                 <StatCard label="日均换手率" value={st?.avgTurnover == null ? '-' : `${formatNum(st.avgTurnover)}%`}/>
             </div>
 
-            <Panel title="日线明细">
-                <div className="table-wrap">
-                    <table className="data-table">
-                        <thead>
-                        <tr>
-                            <th>日期</th>
-                            <th>开盘</th>
-                            <th>最高</th>
-                            <th>最低</th>
-                            <th>收盘</th>
-                            <th>涨跌额</th>
-                            <th>涨跌幅</th>
-                            <th>成交量</th>
-                            <th>成交额</th>
-                            <th>换手率</th>
-                            <th>复权</th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        {(daily.data?.items ?? []).map((d) => (
-                            <tr key={`${d.tradeDate}-${d.adjustFlag}`}>
-                                <td>{d.tradeDate}</td>
-                                <td>{formatPrice(d.open)}</td>
-                                <td className="up">{formatPrice(d.high)}</td>
-                                <td className="down">{formatPrice(d.low)}</td>
-                                <td>{formatPrice(d.close)}</td>
-                                <td className={pctClass(d.chgAmt)}>{d.chgAmt == null ? '-' : formatNum(d.chgAmt)}</td>
-                                <td className={pctClass(d.pctChg)}>{formatPct(d.pctChg)}</td>
-                                <td>{formatVolume(d.volume)}</td>
-                                <td>{formatAmount(d.amount)}</td>
-                                <td>{d.turnover == null ? '-' : `${formatNum(d.turnover)}%`}</td>
-                                <td>{d.adjustFlag ?? '-'}</td>
-                            </tr>
-                        ))}
-                        </tbody>
-                    </table>
-                    {daily.loading ? <div className="empty">加载中…</div> : null}
-                    {!daily.loading && daily.data?.total === 0 ? <div className="empty">暂无日线数据</div> : null}
-                </div>
-                {daily.data ? (
-                    <Pagination
-                        page={daily.data.page}
-                        size={size}
-                        total={daily.data.total}
-                        pages={daily.data.pages}
-                        onPage={setPage}
-                    />
-                ) : null}
-                {range.data ? (
-                    <p className="muted small">
-                        数据覆盖：{range.data.firstDate ?? '-'} ~ {range.data.lastDate ?? '-'} ·
-                        交易日 {range.data.tradingDays} · 记录 {range.data.rowCount} 行 ·
-                        复权口径 {range.data.adjustFlags || '-'} · 来源 {range.data.dataSources || '-'}
+            <Panel
+                className={`sd-daily-panel${dailyOpen ? '' : ' sd-collapsed'}`}
+                title={`日线明细${daily.data ? ` · 共 ${daily.data.total} 条` : ''}`}
+                extra={
+                    <button type="button" className="sd-link" onClick={() => setDailyOpen(!dailyOpen)}>
+                        {dailyOpen ? '收起明细' : '展开明细'}
+                    </button>
+                }
+            >
+                {dailyOpen ? (
+                    <>
+                        <div className="table-wrap">
+                            <table className="data-table">
+                                <thead>
+                                <tr>
+                                    <th>日期</th>
+                                    <th>开盘</th>
+                                    <th>最高</th>
+                                    <th>最低</th>
+                                    <th>收盘</th>
+                                    <th>涨跌额</th>
+                                    <th>涨跌幅</th>
+                                    <th>成交量</th>
+                                    <th>成交额</th>
+                                    <th>换手率</th>
+                                    <th>复权</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                {(daily.data?.items ?? []).map((d) => (
+                                    <tr key={`${d.tradeDate}-${d.adjustFlag}`}>
+                                        <td>{d.tradeDate}</td>
+                                        <td>{formatPrice(d.open)}</td>
+                                        <td className="up">{formatPrice(d.high)}</td>
+                                        <td className="down">{formatPrice(d.low)}</td>
+                                        <td>{formatPrice(d.close)}</td>
+                                        <td className={pctClass(d.chgAmt)}>{d.chgAmt == null ? '-' : formatNum(d.chgAmt)}</td>
+                                        <td className={pctClass(d.pctChg)}>{formatPct(d.pctChg)}</td>
+                                        <td>{formatVolume(d.volume)}</td>
+                                        <td>{formatAmount(d.amount)}</td>
+                                        <td>{d.turnover == null ? '-' : `${formatNum(d.turnover)}%`}</td>
+                                        <td>{d.adjustFlag ?? '-'}</td>
+                                    </tr>
+                                ))}
+                                </tbody>
+                            </table>
+                            {daily.loading ? <div className="empty">加载中…</div> : null}
+                            {!daily.loading && daily.data?.total === 0 ? <div className="empty">暂无日线数据</div> : null}
+                        </div>
+                        {daily.data ? (
+                            <Pagination
+                                page={daily.data.page}
+                                size={size}
+                                total={daily.data.total}
+                                pages={daily.data.pages}
+                                onPage={setPage}
+                                onSize={(s) => { setSize(s); setPage(1); }}
+                                sizes={[10, 20, 50]}
+                            />
+                        ) : null}
+                        {range.data ? <p className="muted small">{rangeText}</p> : null}
+                    </>
+                ) : (
+                    <p className="muted small sd-daily-summary">
+                        已收起，点「展开明细」查看逐日开高低收、量额与复权口径
+                        {range.data ? ` · ${range.data.firstDate ?? '-'} ~ ${range.data.lastDate ?? '-'} · ${range.data.tradingDays} 个交易日` : ''}
                     </p>
-                ) : null}
+                )}
             </Panel>
-        </>
+        </div>
     );
 }

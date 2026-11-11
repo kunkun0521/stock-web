@@ -6,8 +6,22 @@ const LEGEND_STYLE = { top: 0, left: 4, textStyle: { color: MUTED, fontSize: 11 
 
 const line = (bars, key) => bars.map((b) => (b[key] === undefined ? null : b[key]));
 
-/** K 线 + 均线 + 成交量 + MACD（三宫格） */
-export function klineOption(series) {
+/**
+ * K 线 + 均线 + 成交量 + MACD（三宫格）。
+ * height 为图表容器像素高：主图、成交量、MACD 三块按高度比例分配，
+ * 这样调高容器时三个区域一起变大，不会在底部留出空白。
+ */
+export function klineOption(series, height = 460) {
+    const h = Math.max(360, Number(height) || 460);
+    const top = 30;         // 图例区
+    const bottom = 40;      // 日期轴标签 + 缩放条
+    const gap = 8;
+    const usable = h - top - bottom;
+    const sub = Math.max(50, Math.round(usable * 0.14));
+    const main = usable - sub * 2 - gap * 2;
+    const g2 = top + main + gap;
+    const g3 = g2 + sub + gap;
+
     const bars = series?.bars ?? [];
     const dates = bars.map((b) => b.tradeDate);
     const candle = bars.map((b) => [b.open, b.close, b.low, b.high]);
@@ -33,13 +47,13 @@ export function klineOption(series) {
 
     return {
         animation: false,
-        legend: LEGEND_STYLE,
+        legend: { ...LEGEND_STYLE, type: 'scroll', width: '86%' },
         tooltip: { trigger: 'axis', axisPointer: { type: 'cross' } },
         axisPointer: { link: [{ xAxisIndex: 'all' }] },
         grid: [
-            { left: 58, right: 20, top: 30, height: 230 },
-            { left: 58, right: 20, top: 286, height: 58 },
-            { left: 58, right: 20, top: 366, height: 58 },
+            { left: 58, right: 20, top, height: main },
+            { left: 58, right: 20, top: g2, height: sub },
+            { left: 58, right: 20, top: g3, height: sub },
         ],
         xAxis: [
             { type: 'category', data: dates, boundaryGap: true, axisLabel: { show: false }, axisLine: AXIS_LINE },

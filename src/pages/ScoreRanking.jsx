@@ -9,6 +9,7 @@ import Panel from '../components/Panel.jsx';
 import Pagination from '../components/Pagination.jsx';
 import StatCard from '../components/StatCard.jsx';
 import ScoreContinuityPanel from '../components/ScoreContinuityPanel.jsx';
+import ScoreRuleModal, { ScoreRuleButton } from '../components/ScoreRuleModal.jsx';
 import Tabs from '../components/Tabs.jsx';
 import { formatNum, formatPrice, pctClass } from '../utils/format.js';
 
@@ -43,6 +44,8 @@ export default function ScoreRanking() {
     const [size, setSize] = usePersistedState('scores:size', 50);
     const [rebuilding, setRebuilding] = useState(false);
     const [rebuildError, setRebuildError] = useState('');
+    // 评分规则说明是独立浮层，默认关闭，不占文档流也不参与任何筛选状态
+    const [ruleOpen, setRuleOpen] = useState(false);
     // 两个视图：默认进入「量化评分排行」，「连续评分筛选」为次要页签；状态随会话保持，两个实例都保留以免参数丢失
     const [view, setView] = usePersistedState('scores:view', 'ranking');
 
@@ -188,7 +191,7 @@ export default function ScoreRanking() {
                 <StatCard label="复权口径" value={adjustFlag === 2 ? '前复权' : adjustFlag === 1 ? '后复权' : '不复权'} hint="价格因子保持一致"/>
             </div>
 
-            <Panel title="综合评分榜">
+            <Panel title="综合评分榜" extra={<ScoreRuleButton onClick={() => setRuleOpen(true)}/>}>
                 <div className="table-wrap score-table-wrap">
                     <table className="data-table score-table">
                         <thead>
@@ -267,6 +270,8 @@ export default function ScoreRanking() {
                     }}
                 />
             </div>
+
+            <ScoreRuleModal open={ruleOpen} onClose={() => setRuleOpen(false)}/>
         </div>
     );
 }
