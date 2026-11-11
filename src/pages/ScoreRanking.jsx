@@ -8,6 +8,7 @@ import ErrorBanner from '../components/ErrorBanner.jsx';
 import Panel from '../components/Panel.jsx';
 import Pagination from '../components/Pagination.jsx';
 import StatCard from '../components/StatCard.jsx';
+import ScoreContinuityPanel from '../components/ScoreContinuityPanel.jsx';
 import { formatNum, formatPrice, pctClass } from '../utils/format.js';
 
 const scoreTone = (score) => Number(score) >= 70 ? 'score-high' : Number(score) >= 50 ? 'score-mid' : 'score-low';
@@ -230,6 +231,8 @@ export default function ScoreRanking() {
                     }}
                 /> : null}
             </Panel>
+
+            <ScoreContinuityPanel adjustFlag={adjustFlag} date={date}/>
         </div>
     );
 }
