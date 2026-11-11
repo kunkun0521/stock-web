@@ -9,6 +9,7 @@ import Panel from '../components/Panel.jsx';
 import Pagination from '../components/Pagination.jsx';
 import StatCard from '../components/StatCard.jsx';
 import ScoreContinuityPanel from '../components/ScoreContinuityPanel.jsx';
+import Tabs from '../components/Tabs.jsx';
 import { formatNum, formatPrice, pctClass } from '../utils/format.js';
 
 const scoreTone = (score) => Number(score) >= 70 ? 'score-high' : Number(score) >= 50 ? 'score-mid' : 'score-low';
@@ -42,6 +43,8 @@ export default function ScoreRanking() {
     const [size, setSize] = usePersistedState('scores:size', 50);
     const [rebuilding, setRebuilding] = useState(false);
     const [rebuildError, setRebuildError] = useState('');
+    // 两个视图：默认进入「量化评分排行」，「连续评分筛选」为次要页签；状态随会话保持，两个实例都保留以免参数丢失
+    const [view, setView] = usePersistedState('scores:view', 'ranking');
 
     const dates = useApi(() => scoreApi.dates(adjustFlag), [adjustFlag]);
     const ranking = useApi(() => scoreApi.list({
@@ -104,16 +107,30 @@ export default function ScoreRanking() {
         setPage(1);
     };
 
+    const isRanking = view === 'ranking';
+    const viewTabs = [
+        { value: 'ranking', label: '量化评分排行' },
+        { value: 'continuity', label: '连续评分筛选' },
+    ];
+
     return (
-        <div className="score-page">
+        <div className={`score-page${isRanking ? '' : ' continuity-view'}`}>
             <div className="page-intro">
                 <div>
-                    <h1>量化评分排行</h1>
-                    <p>价值、动量、趋势、风险和流动性五类因子综合评分，分数越高代表当前横截面相对表现越强。</p>
+                    <h1>{isRanking ? '量化评分排行' : '连续评分区间筛选'}</h1>
+                    <p>{isRanking
+                        ? '价值、动量、趋势、风险和流动性五类因子综合评分，分数越高代表当前横截面相对表现越强。'
+                        : '按连续 3 / 5 / 7 / 10 / 15 / 20 个交易日综合分所处的分数区间筛选股票，查看持续落在同一分数带的个股。'}</p>
                 </div>
-                <span className="strategy-badge">多因子 · 0—100 分</span>
+                <span className="strategy-badge">{isRanking ? '多因子 · 0—100 分' : '连续天数 · 6 档分数带'}</span>
             </div>
 
+            <div className="score-view-tabs">
+                <Tabs items={viewTabs} value={view} onChange={setView}/>
+                <span className="score-view-hint">默认进入「量化评分排行」</span>
+            </div>
+
+            <div className="score-view" style={{ display: isRanking ? 'flex' : 'none' }}>
             <Panel title="筛选条件">
                 <div className="toolbar wrap">
                     <label className="field">评分日期
@@ -231,8 +248,25 @@ export default function ScoreRanking() {
                     }}
                 /> : null}
             </Panel>
+            </div>
 
-            <ScoreContinuityPanel adjustFlag={adjustFlag} date={date}/>
+            <div className="score-view" style={{ display: isRanking ? 'none' : 'flex' }}>
+                <ScoreContinuityPanel
+                    adjustFlag={adjustFlag}
+                    date={date}
+                    dateOptions={dates.data ?? []}
+                    loadingDates={dates.loading}
+                    onDateChange={(value) => {
+                        setDate(value);
+                        setPage(1);
+                    }}
+                    onAdjustFlagChange={(value) => {
+                        setAdjustFlag(value);
+                        setDate('');
+                        setPage(1);
+                    }}
+                />
+            </div>
         </div>
     );
 }

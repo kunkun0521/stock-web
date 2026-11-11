@@ -1,6 +1,6 @@
 /* 连续评分区间筛选：类名统一 sc- 前缀，全部限定在 .sc-root 内，不影响其它页面 */
 .sc-root {
-    margin-top: 14px;
+    margin-top: 0;
 }
 
 .sc-root .panel-head h2 {
@@ -14,25 +14,51 @@
     flex-wrap: wrap;
 }
 
-.sc-root .sc-badge {
-    display: inline-flex;
-    align-items: center;
-    padding: 3px 9px;
-    border-radius: 999px;
-    background: #eef3ff;
-    color: #2f6fed;
+/* 文字型小按钮：口径说明 / 展开提示 / 展开明细 */
+.sc-root .sc-link {
+    flex: none;
+    padding: 0 4px;
+    border: 0;
+    background: transparent;
+    color: var(--accent);
     font-size: 12px;
-    font-weight: 600;
+    line-height: 1.5;
     white-space: nowrap;
+    cursor: pointer;
 }
 
-.sc-root .sc-note {
-    margin: 0 0 12px;
+.sc-root .sc-link:hover {
+    text-decoration: underline;
+}
+
+/* ---------- 口径说明 ---------- */
+.sc-root .sc-note-row {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin: 0 0 8px;
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+.sc-root .sc-note-line {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.sc-root .sc-note-line b {
+    color: var(--text);
+}
+
+.sc-root .sc-note-full {
+    margin: 0 0 8px;
     color: var(--muted);
     font-size: 12px;
     line-height: 1.7;
 }
 
+/* ---------- 条件区：天数 / 区间同一行，工具栏一行 ---------- */
 .sc-root .sc-controls {
     display: flex;
     flex-direction: column;
@@ -43,18 +69,27 @@
     background: #fafbfc;
 }
 
-.sc-root .sc-control-row {
+.sc-root .sc-chips-line {
     display: flex;
     align-items: center;
-    gap: 10px;
     flex-wrap: wrap;
+    gap: 6px 8px;
 }
 
 .sc-root .sc-label {
-    flex: 0 0 64px;
+    flex: 0 0 auto;
     color: var(--muted);
     font-size: 12px;
     font-weight: 600;
+    white-space: nowrap;
+}
+
+.sc-root .sc-divider {
+    flex: none;
+    width: 1px;
+    height: 16px;
+    margin: 0 4px;
+    background: var(--border);
 }
 
 .sc-root .sc-chips {
@@ -117,6 +152,7 @@
     gap: 6px;
     color: var(--muted);
     font-size: 12px;
+    white-space: nowrap;
 }
 
 .sc-root .sc-select-label select {
@@ -128,29 +164,7 @@
     font-size: 12px;
 }
 
-.sc-root .sc-summary {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px 20px;
-    margin: 12px 0;
-    padding: 9px 12px;
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    background: var(--card);
-    font-size: 12px;
-    color: var(--muted);
-}
-
-.sc-root .sc-summary b {
-    color: var(--text);
-    font-weight: 600;
-}
-
-.sc-root .sc-summary b.sc-hit {
-    color: var(--up);
-    font-size: 14px;
-}
-
+/* ---------- 数据提示 ---------- */
 .sc-root .sc-warn {
     margin: 0 0 12px;
     padding: 8px 11px;
@@ -162,6 +176,69 @@
     line-height: 1.7;
 }
 
+.sc-root .sc-warn-peek {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 0 8px;
+    padding: 5px 10px;
+    border: 1px solid #f2dfae;
+    border-radius: 8px;
+    background: #fff9eb;
+    color: #8a6414;
+    font-size: 12px;
+}
+
+.sc-root .sc-warn-text {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* ---------- 结果头：明细标题 + 关键统计合并为一行 ---------- */
+.sc-root .sc-result-head {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px 14px;
+    margin: 4px 0 8px;
+}
+
+.sc-root .sc-result-title {
+    font-size: 13px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.sc-root .sc-result-title .muted {
+    margin-left: 6px;
+    font-size: 12px;
+    font-weight: 400;
+}
+
+.sc-root .sc-inline-stats {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 4px 14px;
+    margin-left: auto;
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.sc-root .sc-inline-stats b {
+    color: var(--text);
+    font-weight: 600;
+}
+
+.sc-root .sc-inline-stats .sc-hit b {
+    color: var(--up);
+    font-size: 13px;
+}
+
+/* ---------- 命中矩阵 ---------- */
 .sc-root .sc-matrix-wrap {
     margin-bottom: 14px;
     overflow-x: auto;
@@ -238,20 +315,7 @@
     cursor: not-allowed;
 }
 
-.sc-root .sc-result-title {
-    display: flex;
-    align-items: baseline;
-    gap: 10px;
-    margin: 4px 0 8px;
-    font-size: 13px;
-    font-weight: 600;
-}
-
-.sc-root .sc-result-title .muted {
-    font-size: 12px;
-    font-weight: 400;
-}
-
+/* ---------- 命中明细 ---------- */
 .sc-root .sc-table-wrap {
     overflow-x: auto;
 }
@@ -265,6 +329,13 @@
     padding: 7px 8px;
     font-size: 12px;
     white-space: nowrap;
+}
+
+.sc-root .sc-table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: #fff;
 }
 
 .sc-root .sc-table tbody tr {
@@ -285,12 +356,95 @@
     padding: 18px;
 }
 
-@media (max-width: 900px) {
-    .sc-root .sc-label {
-        flex-basis: 100%;
-    }
+/* ---------- 紧凑视图（默认）：折叠次要信息、压缩行高、明细区内滚动 ---------- */
+.sc-root.sc-compact {
+    padding: 10px 12px;
+}
 
+.sc-root.sc-compact .panel-head {
+    margin-bottom: 8px;
+}
+
+.sc-root.sc-compact .sc-controls {
+    gap: 6px;
+    padding: 8px 10px;
+}
+
+.sc-root.sc-compact .sc-chips button {
+    padding: 3px 9px;
+}
+
+.sc-root.sc-compact .sc-toolbar {
+    gap: 6px;
+    padding-top: 0;
+}
+
+.sc-root.sc-compact .sc-input {
+    min-width: 180px;
+    flex-basis: 180px;
+    max-width: 260px;
+    padding: 4px 8px;
+}
+
+.sc-root.sc-compact .sc-select-label select {
+    padding: 3px 7px;
+}
+
+.sc-root.sc-compact .sc-warn {
+    margin-bottom: 8px;
+    padding: 6px 10px;
+}
+
+.sc-root.sc-compact .sc-result-head {
+    margin: 2px 0 6px;
+}
+
+.sc-root.sc-compact .sc-matrix-wrap {
+    margin-bottom: 8px;
+}
+
+.sc-root.sc-compact .sc-matrix {
+    min-width: 640px;
+    border-spacing: 3px;
+}
+
+.sc-root.sc-compact .sc-matrix th {
+    padding: 2px 4px;
+}
+
+.sc-root.sc-compact .sc-cell {
+    min-height: 26px;
+    padding: 3px 4px;
+}
+
+.sc-root.sc-compact .sc-table {
+    min-width: 860px;
+}
+
+.sc-root.sc-compact .sc-table th,
+.sc-root.sc-compact .sc-table td {
+    padding: 5px 7px;
+}
+
+/* 全局 .table-wrap 为 420px；紧凑视图进一步收窄，明细在自身容器内滚动且表头吸顶 */
+.sc-root .sc-table-wrap.sc-table-capped {
+    max-height: 280px;
+}
+
+.sc-root.sc-compact .empty {
+    padding: 12px;
+}
+
+.sc-root.sc-compact .pagination {
+    margin-top: 6px;
+}
+
+@media (max-width: 900px) {
     .sc-root .sc-input {
         max-width: none;
+    }
+
+    .sc-root .sc-inline-stats {
+        margin-left: 0;
     }
 }

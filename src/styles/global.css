@@ -2214,3 +2214,81 @@ button.ghost {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 }
+
+/* ---------- 量化评分页：排行 / 连续筛选 视图切换 ---------- */
+.score-view-tabs {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: fit-content;
+    max-width: 100%;
+}
+
+.score-view-hint {
+    color: var(--muted);
+    font-size: 12px;
+    white-space: nowrap;
+}
+
+.score-view-tabs .tabs {
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 4px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: #eef1f5;
+}
+
+.score-view-tabs .tabs button {
+    padding: 8px 18px;
+    border-color: transparent;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--muted);
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.score-view-tabs .tabs button:hover {
+    color: var(--accent);
+}
+
+.score-view-tabs .tabs button.active {
+    background: var(--accent);
+    color: #fff;
+    box-shadow: 0 2px 6px rgba(47, 111, 237, .25);
+}
+
+.score-view {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+/* 连续评分筛选视图：收紧顶部留白，减少整页滚动距离 */
+.score-page.continuity-view {
+    gap: 10px;
+}
+
+.score-page.continuity-view .page-intro {
+    padding: 0 2px;
+}
+
+.score-page.continuity-view .page-intro h1 {
+    font-size: 19px;
+    margin-bottom: 3px;
+}
+
+.score-page.continuity-view .page-intro p {
+    font-size: 12px;
+}
+
+.score-page.continuity-view .strategy-badge {
+    padding: 4px 10px;
+}
+
+@media (max-width: 700px) {
+    .score-view-hint {
+        display: none;
+    }
+}

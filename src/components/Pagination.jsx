@@ -1,6 +1,5 @@
-/** 分页控件：页码从 1 开始 */
-export default function Pagination({ page, size, total, pages, onPage, onSize }) {
-    const sizes = [20, 50, 100];
+/** 分页控件：页码从 1 开始；sizes 可由页面自定义（默认保持全站口径） */
+export default function Pagination({ page, size, total, pages, onPage, onSize, sizes = [20, 50, 100] }) {
     return (
         <div className="pagination">
             <span className="muted">共 {total} 条 / {pages} 页</span>
