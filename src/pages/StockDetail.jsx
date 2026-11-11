@@ -1,4 +1,6 @@
+import { useEffect } from 'react';
 import { usePersistedState } from '../hooks/usePersistedState.js';
+import { useCurrentStock } from '../context/CurrentStockContext.jsx';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { stockApi } from '../api/stock.js';
 import { useApi } from '../hooks/useApi.js';
@@ -41,6 +43,7 @@ export default function StockDetail() {
     const { code } = useParams();
     const location = useLocation();
     const navigate = useNavigate();
+    const { setCurrentStock } = useCurrentStock();
     const [period, setPeriod] = usePersistedState(`stock-detail:${code}:period`, 'day');
     const [page, setPage] = usePersistedState(`stock-detail:${code}:page`, 1);
     const size = 20;
@@ -69,6 +72,11 @@ export default function StockDetail() {
     const stats = useApi(() => stockApi.stats(code), [code]);
     const range = useApi(() => stockApi.dataRange(code), [code]);
     const daily = useApi(() => stockApi.daily(code, { page, size }), [code, page]);
+
+    // 行情名称回填到全站当前股票，顶栏与各页面输入框就能显示中文名
+    useEffect(() => {
+        if (quote.data?.name) setCurrentStock({ code, name: quote.data.name });
+    }, [code, quote.data?.name, setCurrentStock]);
 
     const q = quote.data;
     const st = stats.data;

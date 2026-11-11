@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import EChart from '../components/EChart.jsx';
 import StockCodeInput, { resolveStock } from '../components/StockCodeInput.jsx';
 import { ErrorBanner, FieldLabel, Loading, Panel, StatCard } from '../components/UI.jsx';
 import { equityOption, klineOption } from '../charts.js';
 import { tLabApi as tApi } from '../../api/tLab.js';
 import { usePersistedState } from '../../hooks/usePersistedState.js';
+import { useCurrentStock, useGlobalStockSync } from '../../context/CurrentStockContext.jsx';
 import { downloadCsv, fmtNum, money, pct, shiftDays, todayStr, toneClass } from '../utils.js';
 
 const DEFAULT_FORM = {
@@ -33,7 +34,7 @@ const ACTION_LABEL = {
 
 /** 查询条件的中文提示，鼠标悬停问号查看，不占排版高度 */
 const TIPS = {
-    code: '支持 6 位代码或中文名（如 600519 / 贵州茅台），输入时自动联想；行情取项目日线表（前复权可选）。',
+    code: '支持 6 位代码或中文名（如 600519 / 贵州茅台），输入时自动联想；这里选定的股票会成为全站当前股票，回本实验室三页与其它页面自动跟随。行情取项目日线表（前复权可选）。',
     buyDate: '模拟起点。当日按「买入价」建仓，T+1 规则下当天不可卖出，只统计收盘持仓。',
     endDate: '回放到哪一天，留空表示一直回放到最新交易日。',
     buyPrice: '初始建仓成交价。留空则使用买入日的收盘价（按所选复权口径）。',
@@ -75,8 +76,13 @@ function formToPayload(form, overrides) {
 }
 
 export default function SimulatePage({ initialBuyDate, onConsumeInitial }) {
+    const { stock: globalStock, setCurrentStock, adoptStock } = useCurrentStock();
     // 参数与上次结果都写进 sessionStorage：切到其他页面（或刷新）再回来不会被清空
-    const [form, setForm] = usePersistedState('tlab:sim:form', DEFAULT_FORM);
+    const [form, setForm] = usePersistedState('tlab:sim:form', {
+        ...DEFAULT_FORM,
+        code: globalStock.code || DEFAULT_FORM.code,
+        stockName: globalStock.name || '',
+    });
     const [overrides, setOverrides] = usePersistedState('tlab:sim:overrides', {});
     const [showAdvanced, setShowAdvanced] = usePersistedState('tlab:sim:advanced', false);
     const [paramDefs, setParamDefs] = useState([]);
@@ -87,6 +93,16 @@ export default function SimulatePage({ initialBuyDate, onConsumeInitial }) {
     const [dailyOpen, setDailyOpen] = useState(false);
     const [tradesOpen, setTradesOpen] = useState(false);
     const [warnOpen, setWarnOpen] = useState(false);
+
+    // 跟随全站当前股票；股票换掉时清掉上一只的结果，避免参数区与图表对不上
+    const formCodeRef = useRef(form.code);
+    formCodeRef.current = form.code;
+    useGlobalStockSync((s) => {
+        const changed = formCodeRef.current !== s.code;
+        setForm((f) => (f.code === s.code && f.stockName === (s.name || ''))
+            ? f : { ...f, code: s.code, stockName: s.name || '' });
+        if (changed) setResult(null);
+    });
 
     useEffect(() => { tApi.defaultParams().then(setParamDefs).catch(() => {}); }, []);
 
@@ -107,6 +123,7 @@ export default function SimulatePage({ initialBuyDate, onConsumeInitial }) {
             if (!payload) {
                 // 支持输入中文名：提交前先用现有联想接口解析成代码，并回填名称
                 const picked = await resolveStock(form.code);
+                setCurrentStock({ code: picked.code, name: picked.name || '' });
                 if (picked.code !== form.code) {
                     setForm((f) => ({ ...f, code: picked.code, stockName: picked.name || f.stockName }));
                 }
@@ -151,8 +168,14 @@ export default function SimulatePage({ initialBuyDate, onConsumeInitial }) {
                         <StockCodeInput
                             value={form.code}
                             name={form.stockName}
-                            onChange={(v) => setForm((f) => ({ ...f, code: v, stockName: '' }))}
-                            onPick={(item) => setForm((f) => ({ ...f, code: item.code, stockName: item.name }))}
+                            onChange={(v) => {
+                                setForm((f) => ({ ...f, code: v, stockName: '' }));
+                                if (/^\d{6}$/.test(v.trim())) adoptStock(v.trim());
+                            }}
+                            onPick={(item) => {
+                                setForm((f) => ({ ...f, code: item.code, stockName: item.name }));
+                                setCurrentStock({ code: item.code, name: item.name || '' });
+                            }}
                         />
                     </label>
                     <label className="field"><FieldLabel tip={TIPS.buyDate}>买入日期</FieldLabel>

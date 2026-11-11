@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import EChart from '../components/EChart.jsx';
 import StockCodeInput, { resolveStock } from '../components/StockCodeInput.jsx';
 import { ErrorBanner, Loading, Panel, StatCard } from '../components/UI.jsx';

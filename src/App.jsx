@@ -1,7 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Route, Routes, useLocation } from 'react-router-dom';
 import Sidebar, { StockSearch } from './components/Header.jsx';
+import CurrentStockPicker from './components/CurrentStockPicker.jsx';
 import LimitUpTicker from './components/LimitUpTicker.jsx';
+import { useCurrentStock } from './context/CurrentStockContext.jsx';
 import MarketDashboard from './pages/MarketDashboard.jsx';
 import StockList from './pages/StockList.jsx';
 import StockDetail from './pages/StockDetail.jsx';
@@ -34,11 +36,18 @@ function NotFound() {
 
 export default function App() {
     const location = useLocation();
+    const { setCurrentStock } = useCurrentStock();
     // 宽屏默认展开侧栏，窄屏默认收起为抽屉
     const [sidebarOpen, setSidebarOpen] = useState(() => window.innerWidth > 960);
     const title = location.pathname.startsWith('/stocks/')
         ? '股票详情'
         : (PAGE_TITLES[location.pathname] ?? '页面不存在');
+
+    // 任何入口（榜单、搜索、涨停播报、直达链接）进入个股详情，都把该股票同步为全站当前股票
+    useEffect(() => {
+        const matched = /^\/stocks\/(\d{6})\/?$/.exec(location.pathname);
+        if (matched) setCurrentStock(matched[1]);
+    }, [location.pathname, setCurrentStock]);
 
     const closeOnMobile = () => {
         if (window.innerWidth <= 960) setSidebarOpen(false);
@@ -68,6 +77,7 @@ export default function App() {
                         <strong>{title}</strong>
                     </div>
                     <div className="topbar-actions">
+                        <CurrentStockPicker/>
                         <StockSearch/>
                         <span className="topbar-badge">仅供研究</span>
                     </div>

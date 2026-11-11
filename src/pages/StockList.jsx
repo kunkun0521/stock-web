@@ -1,4 +1,5 @@
 import { usePersistedState } from '../hooks/usePersistedState.js';
+import { useCurrentStock, useGlobalStockSync } from '../context/CurrentStockContext.jsx';
 import { useNavigate } from 'react-router-dom';
 import { stockApi } from '../api/stock.js';
 import { useApi } from '../hooks/useApi.js';
@@ -17,8 +18,9 @@ const SORT_FIELDS = [
 
 export default function StockList() {
     const navigate = useNavigate();
+    const { stock: globalStock, adoptStock } = useCurrentStock();
 
-    const [keyword, setKeyword] = usePersistedState('stocks:keyword', '');
+    const [keyword, setKeyword] = usePersistedState('stocks:keyword', globalStock.code || '');
     const [query, setQuery] = usePersistedState('stocks:query', {});
     const [board, setBoard] = usePersistedState('stocks:board', '');
     const [industry, setIndustry] = usePersistedState('stocks:industry', '');
@@ -47,6 +49,25 @@ export default function StockList() {
         [query, market, exchange, board, industry, listedOnly, sort, order, page, size]
     );
 
+    // 全站当前股票变化时，输入框与已提交的查询条件一起跟随；用户可随时点顶栏「不限定股票」解除跟随
+    useGlobalStockSync((s) => {
+        setKeyword((prev) => (prev === s.code ? prev : s.code));
+        setQuery((prev) => (prev.keyword === s.code ? prev : { ...prev, keyword: s.code }));
+    });
+
+    /** 输入 / 查询股票时即把它设为全站当前股票，其它页面无需重复输入 */
+    const changeKeyword = (value) => {
+        setKeyword(value);
+        if (/^\d{6}$/.test(value.trim())) adoptStock(value.trim());
+    };
+
+    const runSearch = () => {
+        const text = keyword.trim();
+        setQuery({ ...query, keyword: text });
+        setPage(1);
+        if (text) adoptStock(text);
+    };
+
     const resetPage = (fn) => (value) => {
         fn(value);
         setPage(1);
@@ -58,19 +79,12 @@ export default function StockList() {
                 <input
                     className="grow"
                     placeholder="按代码 / 名称搜索"
+                    title="默认跟随顶栏的全站当前股票；清空后可查看全部"
                     value={keyword}
-                    onChange={(e) => setKeyword(e.target.value)}
-                    onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                            setQuery({ ...query, keyword: keyword.trim() });
-                            setPage(1);
-                        }
-                    }}
+                    onChange={(e) => changeKeyword(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter') runSearch(); }}
                 />
-                <button type="button" onClick={() => {
-                    setQuery({ ...query, keyword: keyword.trim() });
-                    setPage(1);
-                }}>搜索</button>
+                <button type="button" onClick={runSearch}>搜索</button>
 
                 <label className="field">
                     板块

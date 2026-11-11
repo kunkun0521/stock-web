@@ -3,6 +3,7 @@ import { tTradingApi } from '../api/tTrading.js';
 import { stockApi } from '../api/stock.js';
 import { useApi } from '../hooks/useApi.js';
 import { usePersistedState } from '../hooks/usePersistedState.js';
+import { useCurrentStock, useGlobalStockSync } from '../context/CurrentStockContext.jsx';
 import DecimalInput from '../components/DecimalInput.jsx';
 import EChart from '../components/EChart.jsx';
 import ErrorBanner from '../components/ErrorBanner.jsx';
@@ -70,7 +71,7 @@ const STATE_KEY = {
 
 /** 主要参数的悬停说明，集中维护便于以后增删字段。 */
 const FORM_TIPS = {
-    code: '输入 6 位代码或中文名；中文名从联想列表选中后自动回填代码。默认展示贵州茅台 600519。',
+    code: '输入 6 位代码或中文名；中文名从联想列表选中后自动回填代码。这里选定的股票会成为全站当前股票，其它页面自动跟随。默认展示贵州茅台 600519。',
     buyDate: '模拟从该日期（含）开始；此前 75 个自然日只用于计算均线等指标，不参与交易。默认近 7 天。',
     endDate: '默认未来一个月；超出库内行情时自动截断到最新交易日，结果里显示真实回放区间。',
     totalCapital: '账户总资金，用于限制单票市值占比；已有底仓市值超过它时，后端按「底仓市值 + 可用现金」自动抬升。',
@@ -195,14 +196,16 @@ const parseAmount = (raw, label, { optional = false, allowZero = false } = {}) =
 };
 
 export default function TTradingSimulator() {
+    const { stock: globalStock, setCurrentStock, adoptStock } = useCurrentStock();
     // 表单、策略参数、模拟结果与面板状态都随会话保存：切到其他页面再回来原样还原
-    const [form, setForm] = usePersistedState(STATE_KEY.form, DEFAULT_FORM);
+    const [form, setForm] = usePersistedState(STATE_KEY.form,
+        { ...DEFAULT_FORM, code: globalStock.code || DEFAULT_FORM.code });
     const [strategy, setStrategy] = usePersistedState(STATE_KEY.strategy, {});
     const [showAdvanced, setShowAdvanced] = usePersistedState(STATE_KEY.showAdvanced, false);
     const [paramsOpen, setParamsOpen] = usePersistedState(STATE_KEY.paramsOpen, true);
     const [showNotes, setShowNotes] = usePersistedState(STATE_KEY.showNotes, false);
     const [datePreset, setDatePreset] = usePersistedState(STATE_KEY.datePreset, '7d');
-    const [stockName, setStockName] = usePersistedState(STATE_KEY.stockName, DEFAULT_STOCK_NAME);
+    const [stockName, setStockName] = usePersistedState(STATE_KEY.stockName, globalStock.name || '');
     const [logPage, setLogPage] = usePersistedState(STATE_KEY.logPage, 0);
     const [result, setResult] = usePersistedState(STATE_KEY.result, null);
     // 标记「是否已经展示过默认模拟」，避免每次切回页面都重新请求
@@ -218,6 +221,21 @@ export default function TTradingSimulator() {
     const resultRef = useRef(null);
     const autoRanRef = useRef(false);
     const prevResultRef = useRef(result);
+
+    // 本地表单当前的股票代码，用于判断「全站股票是否被其它页面改了」
+    const formCodeRef = useRef(form.code);
+    formCodeRef.current = form.code;
+
+    // 跟随全站当前股票；股票真的换掉时清掉上一只的模拟结果，避免参数与图表对不上
+    useGlobalStockSync((s) => {
+        const changed = formCodeRef.current !== s.code;
+        setForm((f) => (f.code === s.code ? f : { ...f, code: s.code }));
+        setStockName((prev) => (prev === (s.name || '') ? prev : (s.name || '')));
+        if (changed) {
+            setResult(null);
+            setLogPage(0);
+        }
+    });
 
     const defaults = useApi(() => tTradingApi.defaults(), []);
 
@@ -270,11 +288,14 @@ export default function TTradingSimulator() {
     const onCodeChange = (value) => {
         setForm((current) => ({ ...current, code: value }));
         setStockName('');
+        // 6 位代码输入完成即设为全站当前股票；中文名等选中联想项或提交时再解析
+        if (/^\d{6}$/.test(value.trim())) adoptStock(value.trim());
     };
 
     const chooseStock = (item) => {
         setForm((current) => ({ ...current, code: item.code }));
         setStockName(item.name || '');
+        setCurrentStock({ code: item.code, name: item.name || '' });
         setStockOptions([]);
         setPickerOpen(false);
     };
@@ -305,6 +326,10 @@ export default function TTradingSimulator() {
         setRunning(true);
         setActionError('');
         try {
+            // 提交即把该股票设为全站当前股票；中文名先解析成代码再广播，保证其它页面拿到的是 6 位代码
+            const text = targetForm.code.trim();
+            if (/^\d{6}$/.test(text)) adoptStock(text);
+            else await adoptStock(text);
             const data = await tTradingApi.simulate({
                 code: targetForm.code.trim(),
                 buyDate: targetForm.buyDate || undefined,

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { usePersistedState } from '../hooks/usePersistedState.js';
+import { useCurrentStock, useGlobalStockSync } from '../context/CurrentStockContext.jsx';
 import { shortTermHistoryApi } from '../api/shortTermHistory.js';
 import { useApi } from '../hooks/useApi.js';
 import ErrorBanner from '../components/ErrorBanner.jsx';
@@ -69,10 +70,11 @@ function StatusText({ status }) {
 }
 
 export default function ShortTermForecast() {
+    const { stock: globalStock, adoptStock } = useCurrentStock();
     const [adjustFlag, setAdjustFlag] = usePersistedState('short-term:adjustFlag', 2);
     const [date, setDate] = usePersistedState('short-term:date', '');
-    const [keyword, setKeyword] = usePersistedState('short-term:keyword', '');
-    const [queryKeyword, setQueryKeyword] = usePersistedState('short-term:queryKeyword', '');
+    const [keyword, setKeyword] = usePersistedState('short-term:keyword', globalStock.code || '');
+    const [queryKeyword, setQueryKeyword] = usePersistedState('short-term:queryKeyword', globalStock.code || '');
     const [minProbability, setMinProbability] = usePersistedState('short-term:minProbability', '');
     const [sortBy, setSortBy] = usePersistedState('short-term:sortBy', 'score20');
     const [sortDirection, setSortDirection] = usePersistedState('short-term:sortDirection', 'desc');
@@ -131,9 +133,23 @@ export default function ShortTermForecast() {
         }
     }, [rows, selectedCode]);
 
+    // 全站当前股票变化时，筛选条件与逐日明细选中的股票一起跟随
+    useGlobalStockSync((s) => {
+        setKeyword((prev) => (prev === s.code ? prev : s.code));
+        setQueryKeyword((prev) => (prev === s.code ? prev : s.code));
+        setSelectedCode((prev) => (prev === s.code ? prev : s.code));
+    });
+
+    const changeKeyword = (value) => {
+        setKeyword(value);
+        if (/^\d{6}$/.test(value.trim())) adoptStock(value.trim());
+    };
+
     const runSearch = () => {
-        setQueryKeyword(keyword.trim());
+        const text = keyword.trim();
+        setQueryKeyword(text);
         setPage(1);
+        if (text) adoptStock(text);
     };
 
     const changeSort = (field) => {
@@ -250,7 +266,8 @@ export default function ShortTermForecast() {
                     <input
                         value={keyword}
                         placeholder="代码 / 名称"
-                        onChange={(e) => setKeyword(e.target.value)}
+                        title="默认跟随顶栏的全站当前股票；清空后可查看完整排行"
+                        onChange={(e) => changeKeyword(e.target.value)}
                         onKeyDown={(e) => e.key === 'Enter' && runSearch()}
                     />
                     <label className="field">20日达15%概率

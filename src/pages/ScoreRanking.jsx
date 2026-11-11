@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { usePersistedState } from '../hooks/usePersistedState.js';
+import { useCurrentStock, useGlobalStockSync } from '../context/CurrentStockContext.jsx';
 import { useNavigate } from 'react-router-dom';
 import { scoreApi } from '../api/score.js';
 import { useApi } from '../hooks/useApi.js';
@@ -30,10 +31,11 @@ function FactorBar({ label, value }) {
 
 export default function ScoreRanking() {
     const navigate = useNavigate();
+    const { stock: globalStock, adoptStock } = useCurrentStock();
     const [adjustFlag, setAdjustFlag] = usePersistedState('scores:adjustFlag', 2);
     const [date, setDate] = usePersistedState('scores:date', '');
-    const [keyword, setKeyword] = usePersistedState('scores:keyword', '');
-    const [queryKeyword, setQueryKeyword] = usePersistedState('scores:queryKeyword', '');
+    const [keyword, setKeyword] = usePersistedState('scores:keyword', globalStock.code || '');
+    const [queryKeyword, setQueryKeyword] = usePersistedState('scores:queryKeyword', globalStock.code || '');
     const [minScore, setMinScore] = usePersistedState('scores:minScore', '');
     const [page, setPage] = usePersistedState('scores:page', 1);
     const [size, setSize] = usePersistedState('scores:size', 50);
@@ -57,9 +59,22 @@ export default function ScoreRanking() {
     }, [rows]);
     const scoreDate = rows[0]?.tradeDate || date || '最新交易日';
 
+    // 全站当前股票变化时，输入框与已提交的筛选一起跟随
+    useGlobalStockSync((s) => {
+        setKeyword((prev) => (prev === s.code ? prev : s.code));
+        setQueryKeyword((prev) => (prev === s.code ? prev : s.code));
+    });
+
+    const changeKeyword = (value) => {
+        setKeyword(value);
+        if (/^\d{6}$/.test(value.trim())) adoptStock(value.trim());
+    };
+
     const runSearch = () => {
-        setQueryKeyword(keyword.trim());
+        const text = keyword.trim();
+        setQueryKeyword(text);
         setPage(1);
+        if (text) adoptStock(text);
     };
 
     const rebuild = async () => {
@@ -72,6 +87,7 @@ export default function ScoreRanking() {
             });
             setDate(result.tradeDate || '');
             setQueryKeyword(keyword.trim());
+            if (keyword.trim()) adoptStock(keyword.trim());
             setPage(1);
             dates.reload();
             ranking.reload();
@@ -119,7 +135,8 @@ export default function ScoreRanking() {
                     <input
                         value={keyword}
                         placeholder="代码 / 名称"
-                        onChange={(e) => setKeyword(e.target.value)}
+                        title="默认跟随顶栏的全站当前股票；清空后可查看完整排名"
+                        onChange={(e) => changeKeyword(e.target.value)}
                         onKeyDown={(e) => e.key === 'Enter' && runSearch()}
                     />
                     <label className="field">最低分
