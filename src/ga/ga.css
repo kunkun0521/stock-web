@@ -1,0 +1,320 @@
+/*
+ * 遗传算法模块样式：所有类名以 .ga- 前缀开头，样式自给自足，
+ * 仅颜色沿用主站 global.css 的 CSS 变量（并给 fallback），不依赖任何全局类。
+ * 浅色主题、紧凑布局；窄屏表格横向滚动、栅格自动降为单列。
+ */
+
+.ga-root {
+    --ga-up: var(--up, #d8392b);
+    --ga-down: var(--down, #17924e);
+    --ga-accent: var(--accent, #2f6fed);
+    --ga-border: var(--border, #e6e8eb);
+    --ga-card: var(--card, #ffffff);
+    --ga-text: var(--text, #1f2328);
+    --ga-muted: var(--muted, #6b7280);
+    --ga-bg: var(--bg, #f5f6f8);
+    --ga-radius: var(--radius, 10px);
+    color: var(--ga-text);
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.ga-root * { box-sizing: border-box; }
+
+/* ---------------------------------------------------------------- 外壳 */
+.ga-head {
+    background: var(--ga-card);
+    border: 1px solid var(--ga-border);
+    border-radius: var(--ga-radius);
+    padding: 12px 16px 0;
+    margin-bottom: 12px;
+}
+.ga-head-row {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+.ga-title { font-size: 18px; font-weight: 700; margin: 0; }
+.ga-disclaimer { color: var(--ga-muted); font-size: 12px; }
+.ga-nav {
+    display: flex;
+    gap: 2px;
+    margin-top: 10px;
+    overflow-x: auto;
+    border-bottom: 1px solid var(--ga-border);
+}
+.ga-nav-link {
+    flex: none;
+    padding: 8px 14px;
+    border: none;
+    background: transparent;
+    color: var(--ga-muted);
+    font-size: 13px;
+    cursor: pointer;
+    text-decoration: none;
+    white-space: nowrap;
+    border-bottom: 2px solid transparent;
+}
+.ga-nav-link:hover { color: var(--ga-text); }
+.ga-nav-link.active {
+    color: var(--ga-accent);
+    border-bottom-color: var(--ga-accent);
+    font-weight: 600;
+}
+.ga-alerts { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
+.ga-alert {
+    padding: 7px 12px;
+    border-radius: 8px;
+    font-size: 12.5px;
+    border: 1px solid var(--ga-border);
+    background: #f2f6ff;
+    color: #2c4a86;
+}
+.ga-alert--warn { background: #fff7e8; border-color: #f3dfae; color: #8a5a00; }
+.ga-alert--error { background: #fdeceb; border-color: #f3bfbb; color: #a0261a; }
+.ga-alert--info { background: #f2f6ff; border-color: #cfdcff; color: #2c4a86; }
+.ga-page { display: flex; flex-direction: column; gap: 12px; }
+
+/* ---------------------------------------------------------------- 卡片 / 栅格 */
+.ga-card {
+    background: var(--ga-card);
+    border: 1px solid var(--ga-border);
+    border-radius: var(--ga-radius);
+    overflow: hidden;
+}
+.ga-card-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 9px 14px;
+    border-bottom: 1px solid var(--ga-border);
+    min-height: 38px;
+}
+.ga-card-title { font-size: 13.5px; font-weight: 600; margin: 0; }
+.ga-card-extra { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.ga-card-body { padding: 12px 14px; }
+.ga-card-body.ga-flush { padding: 0; }
+.ga-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.ga-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.ga-section-title { font-size: 12.5px; font-weight: 600; color: var(--ga-muted); margin: 2px 0 8px; }
+.ga-hr { height: 1px; background: var(--ga-border); border: 0; margin: 10px 0; }
+
+/* ---------------------------------------------------------------- KPI 卡 */
+.ga-kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+}
+.ga-kpi {
+    background: var(--ga-card);
+    border: 1px solid var(--ga-border);
+    border-radius: var(--ga-radius);
+    padding: 10px 12px;
+    min-width: 0;
+}
+.ga-kpi-label { color: var(--ga-muted); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ga-kpi-value { font-size: 20px; font-weight: 700; margin-top: 4px; line-height: 1.25; word-break: break-all; }
+.ga-kpi-hint { color: var(--ga-muted); font-size: 11px; margin-top: 2px; }
+.ga-tone-up { color: var(--ga-up); }
+.ga-tone-down { color: var(--ga-down); }
+.ga-tone-accent { color: var(--ga-accent); }
+.ga-tone-muted { color: var(--ga-muted); }
+.ga-tone-plain { color: var(--ga-text); }
+
+/* ---------------------------------------------------------------- 筛选条 / 表单 */
+.ga-filters {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 10px 14px;
+    background: var(--ga-card);
+    border: 1px solid var(--ga-border);
+    border-radius: var(--ga-radius);
+    padding: 10px 14px;
+}
+.ga-field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.ga-field-label { color: var(--ga-muted); font-size: 11.5px; }
+.ga-field-row { display: flex; gap: 6px; align-items: center; }
+.ga-input, .ga-select, .ga-textarea {
+    border: 1px solid var(--ga-border);
+    border-radius: 7px;
+    padding: 5px 8px;
+    font-size: 12.5px;
+    color: var(--ga-text);
+    background: var(--ga-card);
+    height: 30px;
+    min-width: 0;
+}
+.ga-input:focus, .ga-select:focus, .ga-textarea:focus { outline: none; border-color: var(--ga-accent); }
+.ga-select { cursor: pointer; padding-right: 4px; }
+.ga-input[type=number] { width: 88px; }
+.ga-input[type=date], .ga-input[type=month] { width: 140px; }
+.ga-textarea { height: auto; min-height: 60px; resize: vertical; width: 100%; }
+.ga-input--wide { width: 160px; }
+
+.ga-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    border: 1px solid var(--ga-border);
+    background: var(--ga-card);
+    color: var(--ga-text);
+    border-radius: 7px;
+    padding: 5px 12px;
+    height: 30px;
+    font-size: 12.5px;
+    cursor: pointer;
+    text-decoration: none;
+    white-space: nowrap;
+}
+.ga-btn:hover { border-color: var(--ga-accent); color: var(--ga-accent); }
+.ga-btn:disabled { opacity: .5; cursor: not-allowed; }
+.ga-btn--primary { background: var(--ga-accent); border-color: var(--ga-accent); color: #fff; }
+.ga-btn--primary:hover { filter: brightness(1.05); color: #fff; }
+.ga-btn--danger { background: var(--ga-up); border-color: var(--ga-up); color: #fff; }
+.ga-btn--danger:hover { filter: brightness(1.05); color: #fff; }
+.ga-btn--ghost { background: transparent; }
+.ga-btn--sm { height: 24px; padding: 2px 8px; font-size: 11.5px; }
+
+/* ---------------------------------------------------------------- 标签 / 徽标 */
+.ga-tabs { display: flex; gap: 2px; flex-wrap: wrap; border-bottom: 1px solid var(--ga-border); padding: 0 14px; }
+.ga-tab {
+    border: none; background: transparent; color: var(--ga-muted);
+    padding: 8px 12px; font-size: 12.5px; cursor: pointer;
+    border-bottom: 2px solid transparent; white-space: nowrap;
+}
+.ga-tab:hover { color: var(--ga-text); }
+.ga-tab.active { color: var(--ga-accent); border-bottom-color: var(--ga-accent); font-weight: 600; }
+.ga-badge {
+    display: inline-block; padding: 1px 7px; border-radius: 999px;
+    font-size: 11px; line-height: 1.6; border: 1px solid transparent; white-space: nowrap;
+}
+.ga-badge--plain { background: #f0f1f3; color: #4b5563; }
+.ga-badge--up { background: #fdeceb; color: var(--ga-up); border-color: #f3bfbb; }
+.ga-badge--down { background: #e7f5ec; color: var(--ga-down); border-color: #b9e2c8; }
+.ga-badge--warn { background: #fff7e8; color: #8a5a00; border-color: #f3dfae; }
+.ga-badge--info { background: #f2f6ff; color: #2c4a86; border-color: #cfdcff; }
+.ga-badge--accent { background: #eaf1ff; color: var(--ga-accent); border-color: #c9dcff; }
+.ga-badge--muted { background: #fafafa; color: var(--ga-muted); border-color: var(--ga-border); }
+.ga-tag { display: inline-block; font-size: 10.5px; color: var(--ga-muted); margin-left: 4px; }
+.ga-tag--warn { color: #8a5a00; }
+.ga-up { color: var(--ga-up); }
+.ga-down { color: var(--ga-down); }
+.ga-flat { color: var(--ga-muted); }
+.ga-muted { color: var(--ga-muted); }
+.ga-num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.ga-mono { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 11.5px; }
+
+/* ---------------------------------------------------------------- 表格 */
+.ga-table-wrap { width: 100%; overflow-x: auto; }
+.ga-table { width: 100%; border-collapse: collapse; font-size: 12.5px; min-width: 640px; }
+.ga-table th, .ga-table td {
+    padding: 6px 10px; text-align: left; border-bottom: 1px solid var(--ga-border); white-space: nowrap;
+}
+.ga-table th { color: var(--ga-muted); font-weight: 600; background: #fafbfc; position: sticky; top: 0; }
+.ga-table td.ga-wrap, .ga-table th.ga-wrap { white-space: normal; min-width: 160px; }
+.ga-table tbody tr:last-child td { border-bottom: none; }
+.ga-row-link { cursor: pointer; }
+.ga-row-link:hover td { background: #f5f8ff; }
+
+/* ---------------------------------------------------------------- 图表 / 遮罩 */
+.ga-chart { width: 100%; position: relative; }
+.ga-chart-mask {
+    position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+    color: var(--ga-muted); font-size: 12.5px; background: rgba(255, 255, 255, .6);
+}
+
+/* ---------------------------------------------------------------- 状态：空态 / 错误 / 加载 */
+.ga-empty { padding: 26px 14px; text-align: center; color: var(--ga-muted); font-size: 12.5px; }
+.ga-loading { padding: 26px 14px; text-align: center; color: var(--ga-muted); font-size: 12.5px; }
+.ga-error {
+    border: 1px solid #f3bfbb; background: #fdeceb; color: #8a2b20;
+    border-radius: 8px; padding: 10px 12px; margin: 10px 0; font-size: 12.5px;
+}
+.ga-error-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-weight: 600; }
+.ga-error-msg { margin-top: 4px; }
+.ga-error-tips { margin: 6px 0 0; padding-left: 18px; color: #9a463c; font-size: 11.5px; }
+.ga-note { font-size: 12px; color: var(--ga-muted); padding: 6px 0; }
+.ga-note--ok { color: var(--ga-down); }
+.ga-note--err { color: var(--ga-up); }
+
+/* ---------------------------------------------------------------- 分页 */
+.ga-pager {
+    display: flex; align-items: center; flex-wrap: wrap; gap: 8px;
+    padding: 8px 14px; border-top: 1px solid var(--ga-border);
+}
+.ga-pager-info { color: var(--ga-muted); font-size: 12px; margin-right: auto; }
+.ga-pager-buttons { display: flex; align-items: center; gap: 4px; }
+.ga-pager-buttons .ga-btn { min-width: 30px; }
+.ga-pager-current { min-width: 28px; text-align: center; font-weight: 600; }
+
+/* ---------------------------------------------------------------- 迷你贡献条 */
+.ga-mini-bar { display: flex; flex-direction: column; gap: 3px; margin: 4px 0; }
+.ga-mini-bar-head { display: flex; justify-content: space-between; font-size: 11px; color: var(--ga-muted); }
+.ga-mini-bar-track { height: 6px; background: #f0f1f3; border-radius: 4px; position: relative; overflow: hidden; }
+.ga-mini-bar-fill { position: absolute; top: 0; height: 100%; border-radius: 4px; }
+.ga-mini-bar-fill--up { background: var(--ga-up); }
+.ga-mini-bar-fill--down { background: var(--ga-down); }
+
+/* ---------------------------------------------------------------- 时间线 */
+.ga-timeline { list-style: none; margin: 0; padding: 0 0 0 16px; border-left: 2px solid var(--ga-border); }
+.ga-timeline-item { position: relative; padding: 0 0 12px 12px; }
+.ga-timeline-item:last-child { padding-bottom: 0; }
+.ga-timeline-dot {
+    position: absolute; left: -21px; top: 4px; width: 9px; height: 9px; border-radius: 50%;
+    background: var(--ga-accent); border: 2px solid var(--ga-card);
+}
+.ga-timeline-date { color: var(--ga-muted); font-size: 11px; }
+.ga-timeline-body { font-size: 12.5px; }
+
+/* ---------------------------------------------------------------- 热力图 / 混淆矩阵 */
+.ga-heat-table { border-collapse: collapse; font-size: 12px; width: 100%; }
+.ga-heat-table th, .ga-heat-table td {
+    border: 1px solid var(--ga-border); padding: 5px 8px; text-align: center; white-space: nowrap;
+}
+.ga-heat-table th { background: #fafbfc; color: var(--ga-muted); font-weight: 600; }
+.ga-heat-table td.ga-heat-rowhead { background: #fafbfc; text-align: left; font-weight: 500; }
+.ga-heat-cell { cursor: default; }
+.ga-heat-decay { outline: 2px solid var(--ga-up); outline-offset: -2px; }
+.ga-heat-legend { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; color: var(--ga-muted); font-size: 11px; margin-top: 8px; }
+.ga-heat-legend i { display: inline-block; width: 12px; height: 12px; border-radius: 2px; vertical-align: middle; }
+
+/* ---------------------------------------------------------------- 日历热力图 */
+.ga-cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; max-width: 420px; }
+.ga-cal-head { text-align: center; color: var(--ga-muted); font-size: 11px; padding: 2px 0; }
+.ga-cal-cell {
+    aspect-ratio: 1 / 1; border-radius: 6px; border: 1px solid var(--ga-border);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    font-size: 11px; color: var(--ga-text); line-height: 1.2; min-width: 0;
+}
+.ga-cal-cell small { font-size: 9px; opacity: .8; }
+.ga-cal-cell--empty { border-color: transparent; background: transparent; }
+.ga-cal-cell--none { background: #f0f1f3; color: var(--ga-muted); }
+.ga-cal-cell--good { background: #cdeed8; color: #17603a; }
+.ga-cal-cell--bad { background: #f8d3cf; color: #8a2b20; }
+.ga-cal-cell--mid { background: #fbf0cf; color: #7a5c00; }
+.ga-cal-cell--hit { cursor: pointer; }
+.ga-cal-cell--hit:hover { outline: 2px solid var(--ga-accent); }
+.ga-cal-legend { display: flex; gap: 12px; flex-wrap: wrap; color: var(--ga-muted); font-size: 11px; margin-top: 10px; }
+
+/* ---------------------------------------------------------------- 表单行 / 内联操作 */
+.ga-inline-form { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px; }
+.ga-stack { display: flex; flex-direction: column; gap: 10px; }
+.ga-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.ga-scroll-y { max-height: 320px; overflow-y: auto; }
+
+/* ---------------------------------------------------------------- 响应式 */
+@media (max-width: 980px) {
+    .ga-grid-2, .ga-grid-3 { grid-template-columns: 1fr; }
+    .ga-kpi-grid { grid-template-columns: repeat(2, 1fr); }
+    .ga-head-row { flex-direction: column; gap: 4px; }
+    .ga-table { min-width: 720px; }
+}
+@media (max-width: 560px) {
+    .ga-kpi-grid { grid-template-columns: 1fr 1fr; }
+    .ga-card-body { padding: 10px; }
+    .ga-filters { padding: 10px; }
+}
