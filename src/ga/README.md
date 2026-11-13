@@ -39,7 +39,8 @@ import GaApp from './ga/GaApp.jsx';
 | `PicksPage.jsx` | 每日选股 |
 | `ConfigPage.jsx` | 参数配置（作用域切换 / 搜索 / 批量保存 / 恢复默认） |
 | `JobsPage.jsx` | **后台任务独立页**：定时调度、任务清单、运行历史、触发结果跟踪 |
-| `StockPage.jsx` | 个股详情 |
+| `kline.js` | 个股 K 线：前端推导 MA5/10/20/60、量能 MA5、MACD(12,26,9)，构造三宫格 ECharts option 与 tooltip |
+| `StockPage.jsx` | 个股详情：K 线独占整行（三宫格 + 预测标记 + 缩放），最新预测/因子贡献、命中率、时间线、口径说明 |
 | `README.md` | 本文件 |
 
 ## 页面覆盖的契约接口
@@ -124,7 +125,12 @@ import GaApp from './ga/GaApp.jsx';
 
 ## 备注
 
-- 已挂载并完成 `npm run build`（Vite 8，653 个模块，构建通过）。
+- 已挂载并完成 `npm run build`（Vite 8，654 个模块，构建通过）。
+- **个股 K 线**：后端 `/stock/{market}/{code}` 只给 `open/close/high/low/volume`，均线与 MACD 在
+  `kline.js` 前端推导。标记默认「每日共识」（一天一个三角，多周期投票），可切「逐周期展开」；
+  三角颜色只表示方向（红涨绿跌），实心=已验证、空心=待验证，悬停 tooltip 列出当日全部周期。
+  `is_correct` 是 MySQL tinyint，JDBC 返回 **1/0 而非布尔**，`kline.js` 的 `isVerified/isCorrect`
+  做了兼容，判断时不要用 `=== true`。
   后端接口全部在 `/api/ga/**`，走 `api.js` → `src/api/client.js`，统一 `ApiResponse` 外壳。
   后端启动时会由 `GaSchemaInitializer` 幂等创建 14 张 `ga_` 表并补齐 `ga_config` 默认参数。
 - 「后台任务」是独立页 `/ga/jobs`：提交任务时记录基线 `lastRunAt`，轮询 `jobs/status` 直到

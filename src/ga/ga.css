@@ -360,6 +360,56 @@
 .ga-config-dirty .ga-input { border-color: var(--ga-accent); }
 .ga-config-msg { padding: 8px 12px; border-radius: 0 0 8px 8px; background: #fafbfc; }
 
+/* ---------------------------------------------------------------- 个股 K 线 */
+.ga-btn-group { display: inline-flex; gap: 4px; flex-wrap: wrap; }
+.ga-btn-group .ga-btn { height: 28px; padding: 2px 9px; font-size: 11.5px; }
+
+.ga-kline-toolbar {
+    display: flex; align-items: flex-end; flex-wrap: wrap; gap: 12px;
+    padding: 8px 12px; margin-bottom: 10px;
+    border: 1px solid var(--ga-border); border-radius: var(--ga-radius);
+    background: var(--ga-card);
+}
+.ga-toggle-group { display: inline-flex; align-items: center; gap: 14px; }
+.ga-toggle {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 12px; color: var(--ga-text); cursor: pointer; user-select: none;
+    height: 28px;
+}
+.ga-toggle input { accent-color: var(--ga-accent); width: 14px; height: 14px; cursor: pointer; }
+.ga-kline-stat {
+    display: inline-flex; align-items: center; gap: 6px; margin-left: auto;
+    font-size: 11.5px; color: var(--ga-muted);
+}
+
+.ga-kline-legend {
+    display: flex; flex-wrap: wrap; gap: 6px 16px;
+    margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--ga-border);
+    font-size: 11px; color: var(--ga-muted); line-height: 1.6;
+}
+.ga-kline-legend span { display: inline-flex; align-items: center; gap: 4px; }
+.ga-swatch { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+
+.ga-mark-detail {
+    display: flex; align-items: center; flex-wrap: wrap; gap: 10px;
+    margin-top: 10px; padding: 9px 12px;
+    border: 1px solid var(--ga-accent); border-radius: 8px;
+    background: #f2f6ff; font-size: 12.5px; color: var(--ga-text);
+}
+.ga-mark-detail b { font-variant-numeric: tabular-nums; }
+.ga-mark-detail .ga-btn { margin-left: auto; height: 26px; }
+.ga-mark-consensus {
+    flex-basis: 100%; font-size: 11.5px; color: var(--ga-muted); line-height: 1.6;
+}
+
+.ga-kline-notes { font-size: 12px; color: var(--ga-muted); line-height: 1.75; }
+.ga-kline-notes p { margin: 0 0 8px; }
+.ga-kline-notes p:last-child { margin-bottom: 0; }
+.ga-kline-notes code {
+    padding: 1px 4px; border-radius: 4px; background: var(--ga-bg);
+    border: 1px solid var(--ga-border); font-size: 11px;
+}
+
 /* ---------------------------------------------------------------- 响应式 */
 @media (max-width: 1100px) {
     .ga-schedule-grid { grid-template-columns: 1fr; }
