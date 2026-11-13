@@ -27,6 +27,7 @@ const POLL_OPTIONS = [
 ];
 
 const JOB_HINTS = {
+    InitJob: '冷启动初始化：补齐最近 10 个交易日的实盘预测 / 回填 / 指标 / 因子 IC（启动后自动跑一次，重复触发安全）',
     FeatureJob: '计算/回填特征，首次运行会自动补齐历史',
     PredictJob: '用冠军集对最新交易日出预测',
     VerifyJob: '用真实行情回填预测结果',
