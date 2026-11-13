@@ -1,67 +1,133 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useApi } from '../hooks/useApi.js';
 import { usePersistedState } from '../hooks/usePersistedState.js';
-import { getConfig, putConfig, getJobsStatus, postJobRun } from './api.js';
+import { getConfig, putConfig } from './api.js';
 import { asArray, asObject, fmtText } from './gaUtils.js';
 import {
-    Card, FilterBar, Field, Input, Btn, AsyncPanel, Badge,
+    Card, FilterBar, Field, Input, Select, Btn, AsyncPanel, Badge,
 } from './GaParts.jsx';
 
-/** 任务状态徽标配色。 */
-function jobTone(s) {
-    const v = String(s ?? '').toUpperCase();
-    if (/OK|SUCCESS|SUCC|成功/.test(v)) return 'down';
-    if (/FAIL|ERROR|失败|异常/.test(v)) return 'up';
-    return 'muted';
-}
-
 /**
- * 参数配置：按 scope 展示 ga_config 项，逐项编辑保存，显示默认值与说明。
- * 另附后台任务状态与「立即运行」，覆盖 jobs/status 与 jobs/run 契约。
+ * 参数配置：按作用域展示 ga_config，逐项或批量编辑保存。
+ *
+ * 后台任务已拆到独立的「后台任务」页（/ga/jobs），这里只负责参数。
+ * 两个容易踩的坑：
+ *  - 作用域选「全部」时同一 paramKey 会在 GLOBAL 与 H1/H3… 里重复，编辑态必须用
+ *    scope + paramKey 作为键，保存时也要把该行自己的 scope 传回后端。
+ *  - PUT /api/ga/config 走 client.js 的 apiPut（含基址回退与后端业务错误解析），
+ *    不要再用原生 fetch 直连，否则跨域预检被拦会报「保存失败」而看不到真实原因。
  */
+
+const SCOPE_OPTIONS = [
+    { value: 'ALL', label: '全部作用域' },
+    { value: 'GLOBAL', label: 'GLOBAL · 全局' },
+    { value: 'H1', label: 'H1 · 1 日' },
+    { value: 'H3', label: 'H3 · 3 日' },
+    { value: 'H5', label: 'H5 · 5 日' },
+    { value: 'H10', label: 'H10 · 10 日' },
+    { value: 'H15', label: 'H15 · 15 日' },
+];
+
+const editKey = (row) => `${fmtText(row.scope) || 'GLOBAL'}|${fmtText(row.paramKey)}`;
+
 export default function ConfigPage() {
     const [scope, setScope] = usePersistedState('ga:config:scope', 'GLOBAL');
+    const [keyword, setKeyword] = useState('');
     const [edits, setEdits] = useState({});
     const [busy, setBusy] = useState('');
     const [msg, setMsg] = useState(null);
-    const [jobMsg, setJobMsg] = useState(null);
 
-    const cfg = useApi(() => getConfig({ scope }), [scope]);
-    const jobs = useApi(() => getJobsStatus(), []);
+    const cfg = useApi(() => getConfig({ scope: scope === 'ALL' ? '' : scope }), [scope]);
 
     const data = asObject(cfg.data);
-    const items = asArray(data.items);
+    const items = asArray(data.items).map(asObject);
     const defaults = asObject(data.defaults);
-    const jobItems = asArray(jobs.data);
 
-    const valueOf = (row) => (edits[row.paramKey] !== undefined ? edits[row.paramKey] : (row.paramValue ?? ''));
+    const valueOf = (row) => {
+        const k = editKey(row);
+        return edits[k] !== undefined ? edits[k] : (row.paramValue ?? '');
+    };
+    const isDirty = (row) => {
+        const k = editKey(row);
+        return edits[k] !== undefined && String(edits[k]) !== String(row.paramValue ?? '');
+    };
 
-    const save = async (row) => {
-        const key = `cfg:${scope}:${row.paramKey}`;
+    const dirtyRows = useMemo(() => items.filter(isDirty), [items, edits]);
+    const shown = useMemo(() => {
+        const q = keyword.trim().toLowerCase();
+        if (!q) return items;
+        return items.filter((r) => `${fmtText(r.paramKey)} ${fmtText(r.description)} ${fmtText(r.scope)}`
+            .toLowerCase().includes(q));
+    }, [items, keyword]);
+
+    const saveOne = async (row) => {
+        const key = editKey(row);
         setBusy(key);
         setMsg(null);
         try {
-            await putConfig({ scope, paramKey: row.paramKey, paramValue: valueOf(row) });
-            setMsg({ tone: 'ok', text: `${fmtText(row.paramKey)} 已保存` });
-            setEdits((prev) => { const next = { ...prev }; delete next[row.paramKey]; return next; });
+            await putConfig({
+                scope: fmtText(row.scope) || (scope === 'ALL' ? 'GLOBAL' : scope),
+                paramKey: fmtText(row.paramKey),
+                paramValue: String(valueOf(row)),
+            });
+            setEdits((prev) => { const next = { ...prev }; delete next[key]; return next; });
+            setMsg({ tone: 'ok', text: `${fmtText(row.scope)} / ${fmtText(row.paramKey)} 已保存，下一次任务生效` });
             cfg.reload();
         } catch (e) {
-            setMsg({ tone: 'err', text: `保存失败：${e.message || '接口异常'}` });
+            setMsg({
+                tone: 'err',
+                text: `保存失败：${e.message || '接口异常'}。请确认后端已启动；若通过其它端口打开页面，接口会自动回退到同源代理。`,
+            });
         } finally {
             setBusy('');
         }
     };
 
-    const runJob = async (row) => {
-        const key = `job:${row.name}`;
+    const saveAll = async () => {
+        if (!dirtyRows.length) return;
+        setBusy('all');
+        setMsg({ tone: 'info', text: `正在保存 ${dirtyRows.length} 项…` });
+        let ok = 0;
+        const failed = [];
+        for (const row of dirtyRows) {
+            try {
+                await putConfig({
+                    scope: fmtText(row.scope) || (scope === 'ALL' ? 'GLOBAL' : scope),
+                    paramKey: fmtText(row.paramKey),
+                    paramValue: String(valueOf(row)),
+                });
+                ok += 1;
+                setEdits((prev) => { const next = { ...prev }; delete next[editKey(row)]; return next; });
+            } catch (e) {
+                failed.push(`${fmtText(row.scope)}/${fmtText(row.paramKey)}：${e.message || '接口异常'}`);
+            }
+        }
+        setMsg(failed.length
+            ? { tone: 'err', text: `已保存 ${ok} 项，失败 ${failed.length} 项：${failed.slice(0, 3).join('；')}` }
+            : { tone: 'ok', text: `已保存 ${ok} 项修改，下一次任务生效` });
+        setBusy('');
+        cfg.reload();
+    };
+
+    const restoreDefault = async (row) => {
+        const def = defaults[row.paramKey];
+        if (def === undefined) {
+            setEdits((prev) => { const next = { ...prev }; delete next[editKey(row)]; return next; });
+            return;
+        }
+        const key = editKey(row);
         setBusy(key);
-        setJobMsg(null);
         try {
-            const r = await postJobRun({ job: row.name });
-            setJobMsg({ tone: 'ok', text: `${fmtText(row.name)}：${r?.message || '已触发'}` });
-            jobs.reload();
+            await putConfig({
+                scope: fmtText(row.scope) || (scope === 'ALL' ? 'GLOBAL' : scope),
+                paramKey: fmtText(row.paramKey),
+                paramValue: String(def),
+            });
+            setEdits((prev) => { const next = { ...prev }; delete next[key]; return next; });
+            setMsg({ tone: 'ok', text: `${fmtText(row.paramKey)} 已恢复默认值 ${def}` });
+            cfg.reload();
         } catch (e) {
-            setJobMsg({ tone: 'err', text: `触发失败：${e.message || '接口异常'}` });
+            setMsg({ tone: 'err', text: `恢复默认失败：${e.message || '接口异常'}` });
         } finally {
             setBusy('');
         }
@@ -70,84 +136,83 @@ export default function ConfigPage() {
     return (
         <div className="ga-page">
             <FilterBar>
-                <Field label="作用域" hint="scope">
-                    <Input className="ga-input--wide" value={scope} onChange={setScope} placeholder="GLOBAL"/>
+                <Field label="作用域" hint="周期级覆盖 GLOBAL">
+                    <Select className="ga-input--wide" value={scope} onChange={(v) => { setScope(v); setEdits({}); }}
+                            options={SCOPE_OPTIONS}/>
                 </Field>
-                <Btn variant="primary" onClick={() => { cfg.reload(); jobs.reload(); }}>刷新</Btn>
+                <Field label="搜索" hint="参数键 / 说明">
+                    <Input className="ga-input--wide" value={keyword} onChange={setKeyword}
+                           placeholder="如 pop_size、淘汰、噪声"/>
+                </Field>
+                <Btn onClick={() => cfg.reload()}>刷新</Btn>
+                <Btn variant="primary" disabled={!dirtyRows.length || busy !== ''}
+                     onClick={saveAll}>保存全部改动{dirtyRows.length ? ` (${dirtyRows.length})` : ''}</Btn>
+                <Btn disabled={!dirtyRows.length || busy !== ''} onClick={() => setEdits({})}>撤销修改</Btn>
+                <span className="ga-muted">
+                    共 {items.length} 项{keyword ? ` · 匹配 ${shown.length} 项` : ''}
+                    {dirtyRows.length ? ` · 已修改 ${dirtyRows.length} 项` : ''}
+                </span>
             </FilterBar>
 
-            <Card title={`参数配置 · ga_config（${fmtText(scope)}）`}>
+            <div className="ga-note">
+                参数写入 <span className="ga-mono">ga_config</span> 后立即刷新后端缓存，下一次任务生效，无需重启服务；
+                「恢复默认」按代码内置默认值写回。后台任务请到顶部的「后台任务」页操作。
+            </div>
+
+            <Card title={`参数配置 · ga_config（${SCOPE_OPTIONS.find((o) => o.value === scope)?.label || scope}）`}>
                 <AsyncPanel state={cfg} isEmpty={(d) => asArray(asObject(d).items).length === 0}
                             emptyText="该作用域暂无配置项">
                     {() => (
                         <div className="ga-table-wrap">
-                            <table className="ga-table">
+                            <table className="ga-table ga-config-table">
                                 <thead><tr>
-                                    <th>参数键</th><th>当前值（可编辑）</th><th>默认值</th>
+                                    <th>作用域</th><th>参数键</th><th>当前值（可编辑）</th><th>默认值</th>
                                     <th>说明</th><th>更新时间</th><th>操作</th>
                                 </tr></thead>
                                 <tbody>
-                                {items.map((row, i) => {
-                                    const r = asObject(row);
-                                    const key = r.paramKey ?? i;
-                                    const changed = edits[r.paramKey] !== undefined
-                                        && String(edits[r.paramKey]) !== String(r.paramValue ?? '');
+                                {shown.map((row, i) => {
+                                    const key = editKey(row);
+                                    const dirty = isDirty(row);
+                                    const def = defaults[row.paramKey];
                                     return (
-                                        <tr key={key}>
-                                            <td className="ga-mono">{fmtText(r.paramKey)}</td>
+                                        <tr key={key || i} className={dirty ? 'ga-config-dirty' : ''}>
+                                            <td><Badge tone={fmtText(row.scope) === 'GLOBAL' ? 'muted' : 'info'}>
+                                                {fmtText(row.scope)}
+                                            </Badge></td>
+                                            <td className="ga-mono">{fmtText(row.paramKey)}</td>
                                             <td>
-                                                <Input className="ga-input--wide" value={valueOf(r)}
-                                                       onChange={(v) => setEdits((p) => ({ ...p, [r.paramKey]: v }))}/>
+                                                <Input className="ga-input--wide" value={valueOf(row)}
+                                                       onChange={(v) => setEdits((p) => ({ ...p, [key]: v }))}/>
                                             </td>
-                                            <td className="ga-mono ga-muted">{fmtText(defaults[r.paramKey])}</td>
-                                            <td className="ga-wrap">{fmtText(r.description)}</td>
-                                            <td>{fmtText(r.updatedAt)}</td>
+                                            <td className="ga-mono ga-muted">{fmtText(def)}</td>
+                                            <td className="ga-wrap">{fmtText(row.description)}</td>
+                                            <td className="ga-num">{fmtText(row.updatedAt)}</td>
                                             <td>
-                                                <Btn sm variant={changed ? 'primary' : ''}
-                                                     disabled={busy === `cfg:${scope}:${r.paramKey}`}
-                                                     onClick={() => save(r)}>保存</Btn>
+                                                <div className="ga-row ga-nowrap">
+                                                    <Btn sm variant={dirty ? 'primary' : ''}
+                                                         disabled={busy === key || busy === 'all'}
+                                                         onClick={() => saveOne(row)}>保存</Btn>
+                                                    <Btn sm disabled={def === undefined || busy === key || busy === 'all'}
+                                                         title="按代码内置默认值写回"
+                                                         onClick={() => restoreDefault(row)}>恢复默认</Btn>
+                                                    {dirty ? (
+                                                        <Btn sm variant="ghost"
+                                                             onClick={() => setEdits((p) => {
+                                                                 const next = { ...p }; delete next[key]; return next;
+                                                             })}>撤销</Btn>
+                                                    ) : null}
+                                                </div>
                                             </td>
                                         </tr>
                                     );
                                 })}
                                 </tbody>
                             </table>
+                            {!shown.length ? <div className="ga-empty">没有匹配的参数</div> : null}
                         </div>
                     )}
                 </AsyncPanel>
-                {msg ? <div className={`ga-note ga-note--${msg.tone}`}>{msg.text}</div> : null}
-            </Card>
-
-            <Card title="后台任务（jobs/status）">
-                <AsyncPanel state={jobs} isEmpty={(d) => asArray(d).length === 0} emptyText="暂无任务状态">
-                    {() => (
-                        <div className="ga-table-wrap">
-                            <table className="ga-table">
-                                <thead><tr>
-                                    <th>任务</th><th>上次运行</th><th>状态</th><th>说明</th><th>操作</th>
-                                </tr></thead>
-                                <tbody>
-                                {jobItems.map((row, i) => {
-                                    const r = asObject(row);
-                                    return (
-                                        <tr key={r.name ?? i}>
-                                            <td className="ga-mono">{fmtText(r.name)}</td>
-                                            <td>{fmtText(r.lastRunAt)}</td>
-                                            <td><Badge tone={jobTone(r.lastStatus)}>{fmtText(r.lastStatus)}</Badge></td>
-                                            <td className="ga-wrap">{fmtText(r.lastMessage)}</td>
-                                            <td>
-                                                <Btn sm disabled={busy === `job:${r.name}`}
-                                                     onClick={() => runJob(r)}>立即运行</Btn>
-                                            </td>
-                                        </tr>
-                                    );
-                                })}
-                                </tbody>
-                            </table>
-                        </div>
-                    )}
-                </AsyncPanel>
-                {jobMsg ? <div className={`ga-note ga-note--${jobMsg.tone}`}>{jobMsg.text}</div> : null}
+                {msg ? <div className={`ga-note ga-note--${msg.tone} ga-config-msg`}>{msg.text}</div> : null}
             </Card>
         </div>
     );

@@ -23,6 +23,13 @@ export default defineConfig({
                 changeOrigin: true,
                 // 保留 /api 前缀，与后端 @RequestMapping 保持一致
                 rewrite: (path) => path,
+                // 浏览器同源请求也会带 Origin（POST/PUT 尤其如此）。后端若按 CORS 规则
+                // 校验这个 Origin，旧配置的 allowedMethods 不含 PUT 时会直接 403，
+                // 参数配置「保存」因此失败。代理层去掉 Origin，让同源请求不涉及 CORS；
+                // 真正的跨域直连仍由后端 WebConfig 放行 PUT。
+                configure: (proxy) => {
+                    proxy.on('proxyReq', (proxyReq) => proxyReq.removeHeader('origin'));
+                },
             },
         },
     },

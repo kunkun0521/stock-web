@@ -1,8 +1,9 @@
+import { useEffect, useState } from 'react';
 import { NavLink, Navigate, Route, Routes } from 'react-router-dom';
-import { useApi } from '../hooks/useApi.js';
+import { useApi, invalidateApiCache } from '../hooks/useApi.js';
 import { getOverview } from './api.js';
 import { asArray, fmtText, GA_BASE } from './gaUtils.js';
-import { ErrorBox } from './GaParts.jsx';
+import { ErrorBox, Btn } from './GaParts.jsx';
 import OverviewPage from './OverviewPage.jsx';
 import PredictionsPage from './PredictionsPage.jsx';
 import AnalysisPage from './AnalysisPage.jsx';
@@ -11,6 +12,7 @@ import EvolutionPage from './EvolutionPage.jsx';
 import FactorsPage from './FactorsPage.jsx';
 import PicksPage from './PicksPage.jsx';
 import ConfigPage from './ConfigPage.jsx';
+import JobsPage from './JobsPage.jsx';
 import StockPage from './StockPage.jsx';
 import './ga.css';
 
@@ -23,6 +25,7 @@ const NAV = [
     { key: 'evolution', label: '进化监控' },
     { key: 'factors', label: '因子体检' },
     { key: 'picks', label: '每日选股' },
+    { key: 'jobs', label: '后台任务' },
     { key: 'config', label: '参数配置' },
 ];
 
@@ -42,6 +45,22 @@ export default function GaApp() {
     // 顶部告警条单独取 /api/ga/overview 的 alerts，带缓存避免切页重复拉取。
     const head = useApi(() => getOverview({}), [], { cacheKey: 'ga:head:alerts', ttlMs: 60 * 1000 });
     const alerts = asArray(head.data?.alerts);
+    const [pageKey, setPageKey] = useState(0);
+    const [checkedAt, setCheckedAt] = useState(null);
+
+    useEffect(() => {
+        if (head.data !== undefined || head.error) setCheckedAt(new Date());
+    }, [head.data, head.error]);
+
+    /** 全局刷新：清掉请求缓存 + 重挂当前页（页面内所有接口重新拉取）。 */
+    const hardRefresh = () => {
+        invalidateApiCache();
+        head.reload();
+        setPageKey((k) => k + 1);
+    };
+
+    const connTone = head.error ? 'err' : head.loading && !head.data ? 'wait' : 'ok';
+    const connText = head.error ? '接口异常' : head.loading && !head.data ? '连接中…' : '接口正常';
 
     return (
         <div className="ga-root">
@@ -49,8 +68,15 @@ export default function GaApp() {
                 <div className="ga-head-row">
                     <h1 className="ga-title">遗传算法涨跌预测</h1>
                     <span className="ga-disclaimer">仅用于研究与复盘，不构成投资建议</span>
+                    <div className="ga-head-tools">
+                        <span className={`ga-conn ga-conn--${connTone}`} title="与 /api/ga 的连接状态">
+                            <i/>{connText}
+                            {checkedAt ? ` · ${checkedAt.toLocaleTimeString('zh-CN')}` : ''}
+                        </span>
+                        <Btn sm onClick={hardRefresh}>刷新本页</Btn>
+                    </div>
                 </div>
-                <nav className="ga-nav">
+                <nav className="ga-nav" aria-label="遗传算法模块导航">
                     {NAV.map((t) => (
                         <NavLink key={t.key} to={`${GA_BASE}/${t.key}`}
                                  className={({ isActive }) => `ga-nav-link${isActive ? ' active' : ''}`}>
@@ -72,7 +98,7 @@ export default function GaApp() {
             ) : null}
 
             <div className="ga-body">
-                <Routes>
+                <Routes key={pageKey}>
                     <Route index element={<Navigate to="overview" replace/>}/>
                     <Route path="overview" element={<OverviewPage/>}/>
                     <Route path="predictions" element={<PredictionsPage/>}/>
@@ -81,6 +107,7 @@ export default function GaApp() {
                     <Route path="evolution" element={<EvolutionPage/>}/>
                     <Route path="factors" element={<FactorsPage/>}/>
                     <Route path="picks" element={<PicksPage/>}/>
+                    <Route path="jobs" element={<JobsPage/>}/>
                     <Route path="config" element={<ConfigPage/>}/>
                     <Route path="stock/:market/:code" element={<StockPage/>}/>
                     <Route path="*" element={<Navigate to="overview" replace/>}/>

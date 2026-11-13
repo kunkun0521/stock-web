@@ -137,6 +137,29 @@ export const apiPost = async (path, data = {}) => {
     });
 };
 
+/**
+ * PUT / DELETE 与 GET / POST 走同一套基址探测与回退逻辑。
+ * 之前参数配置的保存用原生 fetch 直连后端，跨域预检被拦就整页报「保存失败」，
+ * 且拿不到后端 {code,message} 里的具体原因；统一到这里后与其它接口行为一致。
+ */
+export const apiPut = async (path, data = {}) => {
+    return request(path, {}, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+    });
+};
+
+export const apiDelete = async (path) => {
+    return request(path, {}, { method: 'DELETE' });
+};
+
+/** 生成可用于 window.open / <a href> 的绝对接口地址（CSV 导出等文件流接口）。 */
+export function apiUrl(path, params = {}) {
+    const bases = apiBaseCandidates();
+    return buildUrl(trimSlash(bases[0] || '/api'), path, params).toString();
+}
+
 /** 给页面提示用：当前实际在用的接口基址 */
 export function describeApiBase() {
     const candidates = apiBaseCandidates();

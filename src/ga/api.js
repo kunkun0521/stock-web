@@ -6,9 +6,10 @@
  *  - client.js 的接口基址自带 /api（同源 /api 或 http://host/api），因此这里的路径
  *    统一用 '/ga/...' 前缀，拼出来正好是契约里的 '/api/ga/...'。
  *  - 函数参数一律用对象，便于调用方按需传字段、缺省字段不进 query。
- *  - PUT / CSV 导出 client.js 没有对应能力，见文件底部的原生 fetch / 直链实现。
+ *  - PUT 走 client.js 的 apiPut（与其它方法共用基址探测/回退/错误解析）；
+ *    CSV 导出是文件流，走 client.js 的 apiUrl 生成直链，不经过 JSON 解析。
  */
-import { apiGet, apiPost, apiBaseCandidates } from '../api/client.js';
+import { apiGet, apiPost, apiPut, apiUrl } from '../api/client.js';
 
 const P = '/ga';
 
@@ -20,17 +21,6 @@ function withQuery(path, params = {}) {
     });
     const qs = usp.toString();
     return qs ? `${path}?${qs}` : path;
-}
-
-/** 当前实际可用的接口基址（与 client.js 的候选顺序一致），用于原生请求与 CSV 直链。 */
-function resolveBase() {
-    try {
-        const list = apiBaseCandidates();
-        if (list.length) return list[0].replace(/\/+$/, '');
-    } catch {
-        // apiBaseCandidates 不可用时回退到显式配置或同源 /api
-    }
-    return String(import.meta.env.VITE_API_BASE || '/api').replace(/\/+$/, '');
 }
 
 /** 安全路径片段编码。 */
@@ -49,7 +39,7 @@ export const getPredictions = (params = {}) => apiGet(`${P}/predictions`, params
  * 因此这里不走 client.js，直接给浏览器一个带参数的绝对链接（window.open / <a> 打开）。
  */
 export function exportPredictionsUrl(params = {}) {
-    return `${resolveBase()}${withQuery(`${P}/predictions/export`, params)}`;
+    return apiUrl(`${P}/predictions/export`, params);
 }
 
 // ---------------------------------------------------------------- 个股详情
@@ -93,35 +83,17 @@ export const getPicks = (params = {}) => apiGet(`${P}/picks`, params);
 
 // ---------------------------------------------------------------- 参数配置 / 后台任务
 export const getConfig = (params = {}) => apiGet(`${P}/config`, params);
+/** PUT /api/ga/config：与 GET/POST 共用 client.js 的基址探测与错误解析。 */
+export const putConfig = ({ scope, paramKey, paramValue } = {}) =>
+    apiPut(`${P}/config`, { scope, paramKey, paramValue });
+
 export const getJobsStatus = () => apiGet(`${P}/jobs/status`);
 export const postJobRun = ({ job } = {}) => apiPost(`${P}/jobs/run`, { job });
 
-/**
- * PUT /api/ga/config：client.js 只导出 apiGet / apiPost，没有 PUT。
- * 这里用原生 fetch 自行发 PUT，并手动剥掉 {code,message,data} 外壳，
- * 返回 data（兼容后端直接返回 {ok:true} 的情况）。
- */
-export async function putConfig({ scope, paramKey, paramValue } = {}) {
-    const url = `${resolveBase()}${P}/config`;
-    let resp;
-    try {
-        resp = await fetch(url, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-            body: JSON.stringify({ scope, paramKey, paramValue }),
-        });
-    } catch {
-        throw new Error(`无法连接接口 ${url}，请确认后端已启动`);
-    }
-    const text = await resp.text().catch(() => '');
-    let payload = {};
-    try {
-        payload = text ? JSON.parse(text) : {};
-    } catch {
-        payload = {};
-    }
-    if (!resp.ok || (payload.code !== undefined && payload.code !== 0)) {
-        throw new Error(payload.message || `配置保存失败（HTTP ${resp.status}）`);
-    }
-    return payload.data ?? payload;
-}
+/** 后台任务页：运行历史 / 定时调度信息 / 定时开关 / 按定时规则立即执行一次。 */
+export const getJobsLog = ({ limit = 30 } = {}) => apiGet(`${P}/jobs/log`, { limit });
+export const getJobsSchedule = () => apiGet(`${P}/jobs/schedule`);
+export const postScheduleToggle = ({ enabled } = {}) =>
+    apiPost(`${P}/jobs/schedule/toggle`, { enabled });
+export const postScheduleFire = ({ kind } = {}) =>
+    apiPost(`${P}/jobs/schedule/fire`, { kind });

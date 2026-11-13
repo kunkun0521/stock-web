@@ -24,8 +24,8 @@ import GaApp from './ga/GaApp.jsx';
 
 | 文件 | 作用 |
 | --- | --- |
-| `GaApp.jsx` | 默认导出组件：外壳、标题/免责声明、告警条、顶部导航、二级相对路由 |
-| `api.js` | 所有接口集中封装（参数一律用对象；PUT / CSV 用原生 fetch/直链） |
+| `GaApp.jsx` | 默认导出组件：外壳、标题/免责声明、连接状态与全局刷新、告警条、顶部导航、二级相对路由 |
+| `api.js` | 所有接口集中封装（参数一律用对象；PUT 走 `apiPut`、CSV 用 `apiUrl` 直链） |
 | `gaUtils.js` | 共享常量（周期/板块/枚举选项）、格式化、防御性兜底、`GA_BASE`、`guessMarket` |
 | `ga.css` | 全部 `.ga-` 前缀样式，浅色紧凑，窄屏表格横向滚动、栅格降为单列 |
 | `GaChart.jsx` | ECharts 封装（整包 `echarts`，init + ResizeObserver + 卸载 dispose） |
@@ -37,7 +37,8 @@ import GaApp from './ga/GaApp.jsx';
 | `EvolutionPage.jsx` | 进化监控 |
 | `FactorsPage.jsx` | 因子体检 |
 | `PicksPage.jsx` | 每日选股 |
-| `ConfigPage.jsx` | 参数配置 + 后台任务 |
+| `ConfigPage.jsx` | 参数配置（作用域切换 / 搜索 / 批量保存 / 恢复默认） |
+| `JobsPage.jsx` | **后台任务独立页**：定时调度、任务清单、运行历史、触发结果跟踪 |
 | `StockPage.jsx` | 个股详情 |
 | `README.md` | 本文件 |
 
@@ -54,14 +55,22 @@ import GaApp from './ga/GaApp.jsx';
 | 进化监控 | `GET /api/ga/evolution/runs`、`GET /api/ga/evolution/runs/{runId}/generations`、`GET /api/ga/individuals`、`GET /api/ga/champions`、`POST /api/ga/evolution/run`、`POST /api/ga/evolution/replay`、`POST /api/ga/champions/promote`、`POST /api/ga/champions/rollback` |
 | 因子体检 | `GET /api/ga/factors/ic`（对 5 个周期各请求一次） |
 | 每日选股 | `GET /api/ga/picks`（看涨 / 看跌各请求一次） |
-| 参数配置 | `GET /api/ga/config`、`PUT /api/ga/config`、`GET /api/ga/jobs/status`、`POST /api/ga/jobs/run` |
+| 参数配置 | `GET /api/ga/config`、`PUT /api/ga/config` |
+| 后台任务 | `GET /api/ga/jobs/status`、`POST /api/ga/jobs/run`、`GET /api/ga/jobs/log`、`GET /api/ga/jobs/schedule`、`POST /api/ga/jobs/schedule/toggle`、`POST /api/ga/jobs/schedule/fire` |
 
-所有查询走 `src/api/client.js` 的 `apiGet / apiPost`，外壳 `{code,message,data}` 由它剥掉。
+所有查询走 `src/api/client.js` 的 `apiGet / apiPost / apiPut`，外壳 `{code,message,data}` 由它剥掉。
 `client.js` 的接口基址自带 `/api`，所以 `api.js` 里路径统一用 `/ga/...`（拼出来正好是 `/api/ga/...`）。
 
-- `PUT /api/ga/config`：`client.js` 未导出 PUT，故 `api.js` 用原生 `fetch` 自行发 PUT 并手动剥壳。
-- CSV 导出：`client.js` 会按 JSON 解析响应，故用带参数的绝对链接直接打开（`<a target="_blank">`），参数由
-  `URLSearchParams` 拼接，基址取 `apiBaseCandidates()[0]`，可用 `VITE_API_BASE` 兜底。
+- `PUT /api/ga/config`：统一走 `apiPut`，与其它方法共用基址探测/回退与业务错误解析。**不要改回原生 fetch**——
+  直连后端时浏览器的 CORS 预检一旦被拦，页面只会报「保存失败」，拿不到后端真实原因。
+- `vite.config.js` 的 `/api` 代理会移除 `Origin` 头：浏览器对同源 POST/PUT 也会带 Origin，
+  后端旧 CORS 配置（`allowedMethods` 不含 PUT）会据此返回 403，导致配置保存失败。
+  后端 `WebConfig` 已放行 PUT，供非代理的跨域直连场景使用。
+- CSV 导出：`client.js` 会按 JSON 解析响应，故用 `apiUrl()` 生成带参数的绝对链接直接打开
+  （`<a target="_blank">`），可用 `VITE_API_BASE` 兜底。
+- 后端尚未包含 `jobs/log`、`jobs/schedule*` 时（旧版本未重启），后台任务页自动降级：
+  运行历史改用 `jobs/status` 的每任务最后一次结果，定时卡片显示静态 cron 说明与「立即执行」按钮，
+  并在页面上提供「重新检测」。重启后自动显示 cron、下次触发时间、运行时开关与完整历史。
 - POST 带 query 的接口（`evolution/run?horizon=`、`champions/promote?runId=&horizon=`）：`apiPost` 不支持
   query 对象，故把 query 拼进 path 字符串，body 传 `{}`。
 
@@ -115,10 +124,13 @@ import GaApp from './ga/GaApp.jsx';
 
 ## 备注
 
-- 已挂载并完成 `npm run build`（Vite 8，652 个模块，构建通过）。
+- 已挂载并完成 `npm run build`（Vite 8，653 个模块，构建通过）。
   后端接口全部在 `/api/ga/**`，走 `api.js` → `src/api/client.js`，统一 `ApiResponse` 外壳。
   后端启动时会由 `GaSchemaInitializer` 幂等创建 14 张 `ga_` 表并补齐 `ga_config` 默认参数。
-- 看板「参数配置」页可手动触发后台任务；后端另有 `@Scheduled` 日链路（17:30）与周进化（周六 02:00），
-  可用 `stock.ga.enabled=false` 关闭定时触发（手动触发不受影响）。
+- 「后台任务」是独立页 `/ga/jobs`：提交任务时记录基线 `lastRunAt`，轮询 `jobs/status` 直到
+  「结果时间变化且不再运行」，把成功/失败与后端 message 直接展示出来，触发不再只是一句「已触发」。
+- 后端 `@Scheduled` 日链路（17:30）与周进化（周六 02:00）由 `stock.ga.enabled` 与页面运行时开关共同控制；
+  「按定时规则执行」走与 cron 完全相同的提交路径，可即时验证定时触发是否有效。
+  手动「立即运行」始终可用，非交易日定时链路会跳过并在日志里记录原因。
 - 代码注释使用中文；未写入占位 TODO 或假数据；每个页面都有空态。
 - 仅用于研究与复盘，输出不构成投资建议。
