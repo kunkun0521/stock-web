@@ -14,6 +14,7 @@ import TTradingSimulator from './pages/TTradingSimulator.jsx';
 import TLabPage from './tlab/TLabPage.jsx';
 import DataCrawler from './pages/DataCrawler.jsx';
 import GaApp from './ga/GaApp.jsx';
+import QuantApp from './quant/QuantApp.jsx';
 
 const PAGE_TITLES = {
     '/': '市场看板',
@@ -25,6 +26,7 @@ const PAGE_TITLES = {
     '/t-lab': '做T模型2',
     '/data-crawler': '数据抓取',
     '/ga': '遗传算法预测',
+    '/quant': '策略研究与回测',
 };
 
 function NotFound() {
@@ -45,7 +47,9 @@ export default function App() {
         ? '股票详情'
         : location.pathname.startsWith('/ga')
             ? PAGE_TITLES['/ga']
-            : (PAGE_TITLES[location.pathname] ?? '页面不存在');
+            : location.pathname.startsWith('/quant')
+                ? PAGE_TITLES['/quant']
+                : (PAGE_TITLES[location.pathname] ?? '页面不存在');
 
     // 任何入口（榜单、搜索、涨停播报、直达链接）进入个股详情，都把该股票同步为全站当前股票
     useEffect(() => {
@@ -101,6 +105,7 @@ export default function App() {
                         <Route path="/data-crawler" element={<DataCrawler/>}/>
                         {/* GA 模块自带二级相对路由，父路由必须带 * splat */}
                         <Route path="/ga/*" element={<GaApp/>}/>
+                        <Route path="/quant" element={<QuantApp/>}/>
                         <Route path="*" element={<NotFound/>}/>
                     </Routes>
                 </main>
