@@ -93,6 +93,7 @@ export default function ResultPanel({ taskId, onOpenTask }) {
         () => (taskId ? getMetrics(taskId, split) : Promise.resolve({})),
         [taskId, split],
     );
+    const metricsAll = useApi(() => (taskId ? getMetrics(taskId, 'ALL') : Promise.resolve({})), [taskId]);
     const metricsIs = useApi(() => (taskId ? getMetrics(taskId, 'IS') : Promise.resolve({})), [taskId]);
     const metricsOos = useApi(() => (taskId ? getMetrics(taskId, 'OOS') : Promise.resolve({})), [taskId]);
     const equity = useApi(() => (taskId ? getEquity(taskId) : Promise.resolve([])), [taskId]);
@@ -121,8 +122,9 @@ export default function ResultPanel({ taskId, onOpenTask }) {
     const horizonRows = eventRows.filter((r) => r.horizon === horizon);
     const allRow = horizonRows.find((r) => r.splitKey === 'ALL');
     const splitRows = horizonRows.filter((r) => r.splitKey !== 'ALL');
-    const monthly = m.monthlyReturns && typeof m.monthlyReturns === 'object'
-        ? Object.entries(m.monthlyReturns).sort(([a], [b]) => a.localeCompare(b)) : [];
+    const all = metricsAll.data || {};
+    const monthly = all.monthlyReturns && typeof all.monthlyReturns === 'object'
+        ? Object.entries(all.monthlyReturns).sort(([a], [b]) => a.localeCompare(b)) : [];
 
     if (!taskId) {
         return <QEmpty text="先在上方选择或运行一次回测"/>;
@@ -206,7 +208,7 @@ export default function ResultPanel({ taskId, onOpenTask }) {
                                     {METRIC_ROWS.map((r) => (
                                         <tr key={r.key}>
                                             <td>{r.label}</td>
-                                            <td className="ga-num">{r.fmt(m[r.key])}</td>
+                                            <td className="ga-num">{r.fmt(all[r.key])}</td>
                                             <td className="ga-num ga-muted">{r.fmt((metricsIs.data || {})[r.key])}</td>
                                             <td className="ga-num ga-muted">{r.fmt((metricsOos.data || {})[r.key])}</td>
                                         </tr>
