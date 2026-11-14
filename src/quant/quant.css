@@ -139,3 +139,11 @@
     color: var(--ga-muted);
     line-height: 1.6;
 }
+
+/* 今日信号：行尾「查看 →」，提示可点进 K 线且返回后仍在原列表 */
+.quant-row-link {
+    color: var(--ga-accent);
+    font-size: 12px;
+    white-space: nowrap;
+}
+.quant-signal-table tbody tr:hover .quant-row-link { text-decoration: underline; }

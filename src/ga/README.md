@@ -20,6 +20,12 @@ import GaApp from './ga/GaApp.jsx';
 顶部标签导航与「个股详情」跳转使用绝对路径 `${GA_BASE}/...`，`GA_BASE` 集中定义在
 `gaUtils.js`（默认 `/ga`）。**若挂到别的前缀，只需改这一处常量。**
 
+**个股详情的返回约定**：任何页面跳到 `stock/:market/:code` 时都应带
+`state: { from: '<来源完整地址，含 query>', fromLabel: '<来源名>' }`；
+`StockPage` 检测到 `from` 会在顶部渲染「← 返回某某」条，优先 `navigate(-1)`
+（保留来源页 URL、筛选与滚动），没有历史栈时退回 `from`。目前 `PicksPage` /
+`PredictionsPage` / 量化的今日信号都已按此传参，新增入口照做即可。
+
 ## 文件清单
 
 | 文件 | 作用 |

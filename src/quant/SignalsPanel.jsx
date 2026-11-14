@@ -5,9 +5,13 @@ import { num, int, pct } from './format.js';
 /**
  * 今日信号：对最新交易日跑所有策略，输出买入候选 + 触发明细 + 历史参考。
  * 数据由 /signals/scan 现算（同一快照 + 参数有 10 分钟缓存），也可查看已落库的历史信号。
+ *
+ * 当前策略受控于父组件（写进 URL 的 ?s=），从个股 K 线返回时能停在同一策略标签上。
  */
-export default function SignalsPanel({ strategies, scan, scanning, onScan, onOpenStock }) {
-    const [tab, setTab] = useState('');
+export default function SignalsPanel({
+    strategies, scan, scanning, onScan, onOpenStock, active: activeProp = '', onActiveChange,
+}) {
+    const [innerActive, setInnerActive] = useState('');
     const items = scan?.items || [];
     const counts = scan?.counts || {};
 
@@ -16,7 +20,11 @@ export default function SignalsPanel({ strategies, scan, scanning, onScan, onOpe
         label: `${s.name} ${counts[s.key] ?? 0}`,
     })), [strategies, counts]);
 
-    const active = tab || (tabs[0]?.value ?? '');
+    const active = activeProp || innerActive || (tabs[0]?.value ?? '');
+    const setActive = (key) => {
+        setInnerActive(key);
+        if (onActiveChange) onActiveChange(key);
+    };
     const rows = items.filter((it) => it.strategyKey === active);
     const strategyName = strategies?.find((s) => s.key === active)?.name || active;
     const ref = rows[0]?.ref || null;
@@ -36,6 +44,7 @@ export default function SignalsPanel({ strategies, scan, scanning, onScan, onOpe
                 <span className="ga-muted">
                     {scan?.scanDate ? `扫描日 ${scan.scanDate}` : '尚未扫描'}
                     {scan?.snapshot ? ` · 快照 ${scan.snapshot}` : ''}
+                    {scan?.__savedAt ? ' · 已恢复上次扫描结果' : ''}
                     {scan?.note ? ` · ${scan.note}` : ''}
                 </span>
             </QBar>
@@ -54,17 +63,18 @@ export default function SignalsPanel({ strategies, scan, scanning, onScan, onOpe
             ) : (
                 <QCard title={`候选清单 · ${strategyName}`} flush
                        extra={<span className="ga-muted">{rows.length} 只（每策略最多 50）</span>}>
-                    <QTabs items={tabs} value={active} onChange={setTab}/>
+                    <QTabs items={tabs} value={active} onChange={setActive}/>
                     {rows.length ? (
                         <div className="ga-table-wrap">
                             <table className="ga-table quant-signal-table">
                                 <thead><tr>
                                     <th>代码 / 市场</th><th>评分</th><th>收盘</th><th>建议止损</th>
-                                    <th>触发条件</th><th>风险</th>
+                                    <th>触发条件</th><th>风险</th><th>K 线</th>
                                 </tr></thead>
                                 <tbody>
                                 {rows.map((r) => (
                                     <tr key={`${r.strategyKey}-${r.code}`} className={onOpenStock ? 'ga-row-link' : ''}
+                                        title={onOpenStock ? '点击查看该股 K 线，返回后仍停在本列表' : undefined}
                                         onClick={onOpenStock ? () => onOpenStock(r) : undefined}>
                                         <td>
                                             <div className="ga-picks-name">
@@ -79,6 +89,11 @@ export default function SignalsPanel({ strategies, scan, scanning, onScan, onOpe
                                         <td>
                                             {r.risk?.length
                                                 ? r.risk.map((t) => <QBadge key={t} tone="warn">{t}</QBadge>)
+                                                : <span className="ga-muted">—</span>}
+                                        </td>
+                                        <td className="ga-nowrap">
+                                            {onOpenStock
+                                                ? <span className="quant-row-link">查看 →</span>
                                                 : <span className="ga-muted">—</span>}
                                         </td>
                                     </tr>

@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useApi } from '../hooks/useApi.js';
 import { usePersistedState } from '../hooks/usePersistedState.js';
 import { getStock } from './api.js';
@@ -46,6 +46,19 @@ const dateStr = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2
  */
 export default function StockPage() {
     const { market, code } = useParams();
+    const location = useLocation();
+    const navigate = useNavigate();
+    // 从其它页面（今日信号 / 每日选股 / 预测复盘）跳进来时带来源，提供「返回上一列表」
+    const origin = location.state && location.state.from ? location.state : null;
+    const goBack = () => {
+        if (!origin) return;
+        const idx = window.history.state ? window.history.state.idx : undefined;
+        if (typeof idx === 'number' && idx > 0) {
+            navigate(-1);                       // 回退保留来源页的 URL、筛选与滚动位置
+        } else {
+            navigate(origin.from, { replace: true });  // 直接打开详情页时退回来源地址
+        }
+    };
     const [f, setF] = usePersistedState('ga:stock:filters', DEFAULT_VIEW);
     const [viewKey, setViewKey] = useState(0);
     const [selected, setSelected] = useState(null);
@@ -106,6 +119,12 @@ export default function StockPage() {
 
     return (
         <div className="ga-page">
+            {origin ? (
+                <div className="ga-backbar">
+                    <Btn sm onClick={goBack}>← 返回{origin.fromLabel || '上一页'}</Btn>
+                    <span className="ga-muted">返回后仍停留在原来的列表、筛选与滚动位置</span>
+                </div>
+            ) : null}
             <FilterBar>
                 <div className="ga-field">
                     <span className="ga-field-label">个股</span>

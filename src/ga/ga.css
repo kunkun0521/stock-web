@@ -85,6 +85,17 @@
 .ga-alert--info { background: #f2f6ff; border-color: #cfdcff; color: #2c4a86; }
 .ga-page { display: flex; flex-direction: column; gap: 12px; }
 
+/* 个股详情：从列表跳进来时的「返回」条（保留来源页的筛选与滚动位置）。
+   顶栏 topbar 是 sticky 且高 58px，这里贴着它吸顶，滚到 K 线下方也能一键返回。 */
+.ga-backbar {
+    display: flex; align-items: center; gap: 10px;
+    padding: 6px 12px; border: 1px solid var(--ga-border); border-radius: 8px;
+    background: #fbfcfd; font-size: 12px;
+    position: sticky; top: 58px; z-index: 19;
+    box-shadow: 0 2px 6px rgba(17, 24, 39, .05);
+}
+.ga-backbar .ga-btn { font-weight: 600; }
+
 /* ---------------------------------------------------------------- 卡片 / 栅格 */
 .ga-card {
     background: var(--ga-card);

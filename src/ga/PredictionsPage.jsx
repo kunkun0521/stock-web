@@ -82,7 +82,9 @@ export default function PredictionsPage() {
         board: f.board, minConf: f.minConf, maxConf: f.maxConf, inPool: f.inPool, sort: f.sort,
     });
 
-    const openStock = (row) => navigate(`${GA_BASE}/stock/${marketOf(row)}/${String(row?.code ?? '')}`);
+    const openStock = (row) => navigate(`${GA_BASE}/stock/${marketOf(row)}/${String(row?.code ?? '')}`, {
+        state: { from: `${window.location.pathname}${window.location.search}`, fromLabel: '预测复盘' },
+    });
 
     return (
         <div className="ga-page">

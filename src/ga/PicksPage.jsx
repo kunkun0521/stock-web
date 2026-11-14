@@ -245,7 +245,9 @@ export default function PicksPage() {
             return Math.abs(num(b.consensus) || 0) - Math.abs(num(a.consensus) || 0);
         });
 
-    const openStock = (row) => navigate(`${GA_BASE}/stock/${marketOf(row)}/${String(row?.code ?? '')}`);
+    const openStock = (row) => navigate(`${GA_BASE}/stock/${marketOf(row)}/${String(row?.code ?? '')}`, {
+        state: { from: `${GA_BASE}/picks`, fromLabel: '每日选股' },
+    });
     const tabs = [
         { value: 'up', label: `看涨榜 ${upList.length}` },
         { value: 'down', label: `看跌榜 ${downList.length}` },

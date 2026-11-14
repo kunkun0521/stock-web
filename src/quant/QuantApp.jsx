@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useApi } from '../hooks/useApi.js';
 import {
     getStrategies, getDataOverview, reloadData, submitBacktest, getBacktest,
@@ -20,6 +20,32 @@ const TABS = [
     { value: 'history', label: '任务历史' },
 ];
 
+/* 扫描结果与列表滚动位置暂存：跳到个股 K 线再返回时，
+   不必重新扫描（服务端 10 分钟缓存），列表也回到原来那一屏。 */
+const SCAN_STORE_KEY = 'quant:signals:scan';
+const SCAN_TTL_MS = 10 * 60 * 1000;
+const SCROLL_STORE_KEY = 'quant:signals:scroll';
+
+function readStoredScan() {
+    try {
+        const raw = window.sessionStorage.getItem(SCAN_STORE_KEY);
+        if (!raw) return null;
+        const data = JSON.parse(raw);
+        if (!data?.scanDate || Date.now() - (data.__savedAt || 0) > SCAN_TTL_MS) return null;
+        return data;
+    } catch (e) {
+        return null;
+    }
+}
+
+function writeStoredScan(data) {
+    try {
+        window.sessionStorage.setItem(SCAN_STORE_KEY, JSON.stringify({ ...data, __savedAt: Date.now() }));
+    } catch (e) {
+        /* 隐私模式/超限时忽略，最多只是返回后需要重扫 */
+    }
+}
+
 /**
  * 量化策略研究与回测平台（/quant）。
  *
@@ -28,12 +54,27 @@ const TABS = [
  */
 export default function QuantApp() {
     const navigate = useNavigate();
-    const [tab, setTab] = useState('strategy');
+    // Tab 与「今日信号」当前策略都写进 URL：跳个股 K 线再返回时能原样还原，
+    // 也能直接分享「今日信号 / L1 超跌反弹」这种链接。
+    const [searchParams, setSearchParams] = useSearchParams();
+    const tab = searchParams.get('tab') || 'strategy';
+    const signalsStrategy = searchParams.get('s') || '';
+    const patchParams = (patch) => {
+        const next = new URLSearchParams(searchParams);
+        Object.entries(patch).forEach(([k, v]) => {
+            if (v === '' || v == null) next.delete(k); else next.set(k, v);
+        });
+        setSearchParams(next, { replace: true });
+    };
+    const setTab = (next) => patchParams({ tab: next });
+    const setSignalsStrategy = (key) => patchParams({ s: key });
+
     const [taskId, setTaskId] = useState(null);
     const [task, setTask] = useState(null);
     const [submitting, setSubmitting] = useState(false);
     const [submitError, setSubmitError] = useState('');
-    const [scan, setScan] = useState(null);
+    // 返回本页时优先复用上次扫描结果，避免又等 3 秒重算
+    const [scan, setScan] = useState(readStoredScan);
     const [scanning, setScanning] = useState(false);
     const [page, setPage] = useState(1);
     const [size, setSize] = useState(10);
@@ -112,11 +153,52 @@ export default function QuantApp() {
         try {
             const data = await scanSignals({});
             setScan(data);
+            writeStoredScan(data);
         } catch (e) {
             setSubmitError(e.message || '扫描失败');
         } finally {
             setScanning(false);
         }
+    };
+
+    // 从个股 K 线返回时，把列表滚回原来那一屏（只在首次挂载时执行一次）。
+    // 分两次尝试：首次等首屏渲染，若高度还不够（表格尚未铺开）再补一次。
+    useEffect(() => {
+        if (tab !== 'signals') return undefined;
+        let saved = 0;
+        try {
+            saved = Number(window.sessionStorage.getItem(SCROLL_STORE_KEY) || 0);
+        } catch (e) {
+            saved = 0;
+        }
+        if (!saved) return undefined;
+        const restore = () => window.scrollTo({ top: saved, behavior: 'auto' });
+        const first = setTimeout(() => {
+            restore();
+            try {
+                window.sessionStorage.removeItem(SCROLL_STORE_KEY);
+            } catch (e) {
+                /* 忽略 */
+            }
+        }, 150);
+        const second = setTimeout(restore, 450);
+        return () => {
+            clearTimeout(first);
+            clearTimeout(second);
+        };
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+    /** 打开个股 K 线：记录来源（含 tab 与策略）与滚动位置，详情页据此提供「返回」 */
+    const openStock = (row) => {
+        try {
+            window.sessionStorage.setItem(SCROLL_STORE_KEY, String(window.scrollY));
+        } catch (e) {
+            /* 忽略 */
+        }
+        const from = `${window.location.pathname}${window.location.search}`;
+        navigate(`/ga/stock/${row.market}/${row.code}`, {
+            state: { from, fromLabel: '今日信号' },
+        });
     };
 
     const reload = async () => {
@@ -209,7 +291,9 @@ export default function QuantApp() {
                     scan={scan}
                     scanning={scanning}
                     onScan={doScan}
-                    onOpenStock={(r) => navigate(`/ga/stock/${r.market}/${r.code}`)}
+                    onOpenStock={openStock}
+                    active={signalsStrategy}
+                    onActiveChange={setSignalsStrategy}
                 />
             ) : null}
 
