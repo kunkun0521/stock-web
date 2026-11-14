@@ -43,7 +43,7 @@ import GaApp from './ga/GaApp.jsx';
 | `EvolutionPage.jsx` | 进化监控 |
 | `FactorsPage.jsx` | 因子体检 |
 | `PicksPage.jsx` | 每日选股 |
-| `ConfigPage.jsx` | 参数配置（作用域切换 / 搜索 / 批量保存 / 恢复默认） |
+| `ConfigPage.jsx` | 参数配置：按业务语义分 9 个可折叠分组 + 顶部导航 chip 一键定位、作用域切换 / 搜索（命中自动展开）/ 批量保存 / 恢复默认 |
 | `JobsPage.jsx` | **后台任务独立页**：定时调度、任务清单、运行历史、触发结果跟踪 |
 | `CleanupPage.jsx` | **数据清理独立页**：只读体检（11 类脏数据 + 保留期预览）、修复 / 清理预览与执行、执行历史；配合后端 `CleanupJob` / `GaCleanupService` |
 | `kline.js` | 个股 K 线：前端推导 MA5/10/20/60、量能 MA5、MACD(12,26,9)，构造三宫格 ECharts option 与 tooltip；`isVerified/isCorrect` 兼容 tinyint 1/0 |
