@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { QCard, QBar, QBtn, QBadge, QEmpty, QTabs } from './QuantParts.jsx';
-import { num, int, pct, signedPct, tone } from './format.js';
+import { num, int, pct } from './format.js';
 
 /**
  * 今日信号：对最新交易日跑所有策略，输出买入候选 + 触发明细 + 历史参考。
@@ -19,6 +19,13 @@ export default function SignalsPanel({ strategies, scan, scanning, onScan, onOpe
     const active = tab || (tabs[0]?.value ?? '');
     const rows = items.filter((it) => it.strategyKey === active);
     const strategyName = strategies?.find((s) => s.key === active)?.name || active;
+    const ref = rows[0]?.ref || null;
+    const refText = ref
+        ? ['H5', 'H10', 'H20']
+            .filter((h) => ref[h])
+            .map((h) => `${h.replace('H', '')}日 胜率 ${ref[h].winRate == null ? '-' : pct(ref[h].winRate, 0)}（${int(ref[h].cnt)} 次）`)
+            .join(' · ')
+        : '';
 
     return (
         <div className="quant-stack">
@@ -53,11 +60,7 @@ export default function SignalsPanel({ strategies, scan, scanning, onScan, onOpe
                             <table className="ga-table quant-signal-table">
                                 <thead><tr>
                                     <th>代码 / 市场</th><th>评分</th><th>收盘</th><th>建议止损</th>
-                                    <th>触发条件</th>
-                                    <th title="同策略同参数下，事件研究 5 日胜率（样本数）">5 日</th>
-                                    <th title="事件研究 10 日胜率">10 日</th>
-                                    <th title="事件研究 20 日胜率">20 日</th>
-                                    <th>风险</th>
+                                    <th>触发条件</th><th>风险</th>
                                 </tr></thead>
                                 <tbody>
                                 {rows.map((r) => (
@@ -73,17 +76,6 @@ export default function SignalsPanel({ strategies, scan, scanning, onScan, onOpe
                                         <td className="ga-num">{num(r.closePrice, 2)}</td>
                                         <td className="ga-num">{r.stopPrice ? num(r.stopPrice, 2) : '-'}</td>
                                         <td className="ga-wrap quant-signal-detail">{r.detail?.text || '-'}</td>
-                                        {['H5', 'H10', 'H20'].map((h) => {
-                                            const ref = r.ref?.[h] || {};
-                                            return (
-                                                <td key={h} className="ga-num">
-                                                    <div className={`quant-ref ${tone(ref.meanRet) || ''}`}>
-                                                        <span>{ref.winRate == null ? '-' : pct(ref.winRate, 0)}</span>
-                                                        <small>{int(ref.cnt)} 次</small>
-                                                    </div>
-                                                </td>
-                                            );
-                                        })}
                                         <td>
                                             {r.risk?.length
                                                 ? r.risk.map((t) => <QBadge key={t} tone="warn">{t}</QBadge>)
@@ -95,6 +87,11 @@ export default function SignalsPanel({ strategies, scan, scanning, onScan, onOpe
                             </table>
                         </div>
                     ) : <QEmpty text="该策略今日没有候选；可换策略或等收盘数据更新后重扫"/>}
+                    {refText ? (
+                        <div className="quant-ref-strip">
+                            历史参考（同策略同参数，事件研究去重后）：{refText}
+                        </div>
+                    ) : null}
                 </QCard>
             )}
         </div>
