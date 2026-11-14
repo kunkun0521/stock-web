@@ -9,6 +9,7 @@ import {
 } from './gaUtils.js';
 import { buildKlineOption, markSummary, isVerified } from './kline.js';
 import GaChart from './GaChart.jsx';
+import Term from './GlossaryTerm.jsx';
 import {
     Card, FilterBar, Field, Select, Input, Btn, AsyncPanel, Empty, Badge, MiniBar, Timeline,
 } from './GaParts.jsx';
@@ -209,13 +210,15 @@ export default function StockPage() {
                                                             <Badge tone={dirTone(l.predDirection)}>
                                                                 {fmtText(l.horizon)} 日 · {dirLabel(l.predDirection)}
                                                             </Badge>
-                                                            <span className="ga-num">P↑ {fmtRate(l.probUp)}</span>
-                                                            <span className="ga-muted">置信 {fmtRate(l.confidence)}</span>
+                                                            <span className="ga-num"><Term id="probUp">P↑</Term> {fmtRate(l.probUp)}</span>
+                                                            <span className="ga-muted"><Term id="confidence">置信</Term> {fmtRate(l.confidence)}</span>
                                                         </div>
-                                                        <div className="ga-section-title" style={{ marginTop: 8 }}>因子贡献（c）</div>
+                                                        <div className="ga-section-title" style={{ marginTop: 8 }}>
+                                                            因子贡献 <Term id="explain">c</Term> · <Term id="zscore">z</Term> 为标准化分数
+                                                        </div>
                                                         {ex.length ? ex.map((e, j) => (
                                                             <MiniBar key={j}
-                                                                     label={`${fmtText(e?.f)}${e?.z !== undefined ? ` (z=${fmtNum(e.z, 2)})` : ''}`}
+                                                                     label={`${fmtText(e?.f)}${e?.z !== undefined ? ` · 标准化 ${fmtNum(e.z, 2)}` : ''}`}
                                                                      value={e?.c} max={maxAbs}/>
                                                         )) : <Empty text="暂无解释（该预测未记录因子贡献）"/>}
                                                     </div>
@@ -254,11 +257,11 @@ export default function StockPage() {
                             </Card>
                             <Card title="口径说明">
                                 <div className="ga-kline-notes">
-                                    <p>行情取 <code>stock_daily_all</code> 中 <code>adjustflag=2</code>（前复权）日线，默认最近 180 天；
-                                        MA/MACD 由前端按收盘价推导，不占用后端接口。</p>
-                                    <p>预测标记来自 <code>ga_prediction</code> 的主榜（CHAMPION）记录；
-                                        「已验证」指已由 VerifyJob 用真实行情回填，命中率仅统计已验证样本。</p>
-                                    <p>回放（is_replay=1）与实盘（is_replay=0）预测共用同一张表，
+                                    <p>行情取 <Term id="stockDailyAll">stock_daily_all</Term> 中 <Term id="adjustflag">adjustflag=2</Term>（前复权）日线，默认最近 180 天；
+                                        MA（移动平均线）/ MACD（异同移动平均线）由前端按收盘价推导，不占用后端接口。</p>
+                                    <p>预测标记来自 <Term id="gaPrediction">ga_prediction</Term> 的主榜（<Term id="CHAMPION">CHAMPION</Term>）记录；
+                                        「已验证」指已由 VerifyJob 用真实行情回填，<Term id="hitRate">命中率</Term>仅统计已验证样本。</p>
+                                    <p><Term id="isReplay">回放（is_replay=1）与实盘（is_replay=0）</Term>预测共用同一张表，
                                         若同一天出现方向相反的标记，是不同周期的独立判断，可按「周期」筛选查看。</p>
                                 </div>
                             </Card>

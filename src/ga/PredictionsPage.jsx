@@ -8,6 +8,8 @@ import {
     INPOOL_OPTIONS, SORT_OPTIONS, asArray, asObject, fmtRate, fmtInt, fmtText,
     formatPct, dirLabel, dirTone, marketOf,
 } from './gaUtils.js';
+import Term from './GlossaryTerm.jsx';
+import { isVerified, isCorrect } from './kline.js';
 import {
     Card, FilterBar, Field, Select, Input, Btn, AsyncPanel, Pager, Badge, Tag, Empty,
 } from './GaParts.jsx';
@@ -20,12 +22,16 @@ const DEFAULT_FILTERS = {
 /** 结果徽标：优先用 isCorrect，缺失时从 status 文本推断，再不行视为待验证。 */
 function resultInfo(row) {
     const status = String(row?.status ?? '');
-    if (row?.isCorrect === true || /win|correct|hit|right|命中/i.test(status)) {
-        return { tone: 'accent', text: '✓ 命中' };
+    // is_correct 是 MySQL tinyint，JDBC 返回 1/0 而不是布尔；统一走 kline.js 的兼容判断，
+    // 否则所有行都会被误显示成「待验证」。
+    if (isVerified(row)) {
+        return isCorrect(row)
+            ? { tone: 'accent', text: '✓ 命中' }
+            : { tone: 'up', text: '✗ 未命中' };
     }
-    if (row?.isCorrect === false || /lose|wrong|miss|error|未中/i.test(status)) {
-        return { tone: 'up', text: '✗ 未命中' };
-    }
+    if (/void|失效/i.test(status)) return { tone: 'muted', text: '已失效' };
+    if (/win|correct|hit|right|命中/i.test(status)) return { tone: 'accent', text: '✓ 命中' };
+    if (/lose|wrong|miss|error|未中/i.test(status)) return { tone: 'up', text: '✗ 未命中' };
     return { tone: 'muted', text: '待验证' };
 }
 
@@ -98,6 +104,7 @@ export default function PredictionsPage() {
             <Card title="预测明细" flush extra={
                 <div className="ga-row">
                     <Badge tone="accent">命中率 {fmtRate(summary.hitRate)}</Badge>
+                    <Term id="hitRate">整体命中率</Term>
                     <span className="ga-muted">样本 {fmtInt(summary.n)} 条</span>
                 </div>
             }>
@@ -108,9 +115,9 @@ export default function PredictionsPage() {
                                 <table className="ga-table">
                                     <thead>
                                     <tr>
-                                        <th>交易日</th><th>代码</th><th>名称</th><th>周期</th><th>方向</th>
-                                        <th>上涨概率</th><th>置信度</th><th>目标日</th><th>真实收益</th>
-                                        <th>结果</th><th>标记</th><th>冠军版本</th><th>在池</th>
+                                        <th>交易日</th><th>代码</th><th>名称</th><th><Term id="horizon">周期</Term></th><th><Term id="predDirection">方向</Term></th>
+                                        <th><Term id="probUp">上涨概率</Term></th><th><Term id="confidence">置信度</Term></th><th>目标日</th><th><Term id="actualReturn">真实收益</Term></th>
+                                        <th><Term id="status">结果</Term></th><th><Term id="limitFlag">标记</Term></th><th><Term id="championVersion">冠军版本</Term></th><th><Term id="inPool">在池</Term></th>
                                     </tr>
                                     </thead>
                                     <tbody>

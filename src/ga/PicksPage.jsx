@@ -6,6 +6,7 @@ import {
     GA_BASE, asArray, asObject, fmtRate, fmtNum, fmtText,
     dirTone, isUpDir, isDownDir, marketOf,
 } from './gaUtils.js';
+import Term from './GlossaryTerm.jsx';
 import { Card, FilterBar, Field, Input, Btn, AsyncPanel, Badge, Empty } from './GaParts.jsx';
 
 const DEFAULT_FILTERS = {
@@ -20,8 +21,8 @@ function pickTable(rows, emptyText, openStock) {
         <div className="ga-table-wrap">
             <table className="ga-table">
                 <thead><tr>
-                    <th>代码</th><th>名称</th><th>共振</th><th>平均置信</th>
-                    <th>各周期方向</th><th>各周期 P↑</th><th>命中率60</th><th>风险</th>
+                    <th>代码</th><th>名称</th><th><Term id="minConsensus">共振</Term></th><th><Term id="confidence">平均置信</Term></th>
+                    <th><Term id="predDirection">各周期方向</Term></th><th><Term id="probUp">各周期 P↑</Term></th><th><Term id="hitRate60">命中率60</Term></th><th><Term id="limitFlag">风险</Term></th>
                 </tr></thead>
                 <tbody>
                 {list.map((row, i) => {
@@ -85,8 +86,8 @@ export default function PicksPage() {
         <div className="ga-page">
             <FilterBar>
                 <Field label="日期"><Input type="date" value={f.date} onChange={set('date')}/></Field>
-                <Field label="Top N"><Input type="number" min="1" value={f.topN} onChange={set('topN')}/></Field>
-                <Field label="共振下限" hint="minConsensus">
+                <Field label={<span><Term id="TopN">Top N</Term> 取前 N 名</span>}><Input type="number" min="1" value={f.topN} onChange={set('topN')}/></Field>
+                <Field label={<span>共振下限 <Term id="minConsensus"/></span>} hint="默认 4 个周期方向一致">
                     <Input type="number" step="0.1" min="0" value={f.minConsensus} onChange={set('minConsensus')}/>
                 </Field>
                 <Btn variant="primary" onClick={main.reload}>刷新</Btn>

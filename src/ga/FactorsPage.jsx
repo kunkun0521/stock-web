@@ -5,6 +5,7 @@ import {
     UP, MUTED, ACCENT, HORIZONS, asArray, num, fmtNum, fmtText,
 } from './gaUtils.js';
 import GaChart from './GaChart.jsx';
+import Term from './GlossaryTerm.jsx';
 import { Card, FilterBar, Field, Input, Btn, AsyncPanel, Empty } from './GaParts.jsx';
 
 const DEFAULT_FILTERS = { days: '60' };
@@ -29,18 +30,18 @@ function factorSeriesOption(rec) {
     return {
         animation: false,
         tooltip: { trigger: 'axis' },
-        legend: { top: 0, left: 4, textStyle: { color: MUTED, fontSize: 11 }, data: ['ic20', 'ic60'] },
+        legend: { top: 0, left: 4, textStyle: { color: MUTED, fontSize: 11 }, data: ['近 20 日 IC', '近 60 日 IC'] },
         grid: { left: 48, right: 16, top: 28, bottom: 26 },
         xAxis: { type: 'category', data: HORIZONS.map((h) => `${h} 日`), axisLabel: { color: MUTED, fontSize: 10 }, axisLine: AXIS_LINE },
         yAxis: { type: 'value', axisLabel: { color: MUTED }, splitLine: SPLIT_LINE },
         series: [
             {
-                name: 'ic20', type: 'line', smooth: true,
+                name: '近 20 日 IC', type: 'line', smooth: true,
                 data: HORIZONS.map((h) => num(rec[h]?.ic20)),
                 lineStyle: { width: 1.6, color: '#e8a33d' }, itemStyle: { color: '#e8a33d' },
             },
             {
-                name: 'ic60', type: 'line', smooth: true,
+                name: '近 60 日 IC', type: 'line', smooth: true,
                 data: HORIZONS.map((h) => num(rec[h]?.ic60)),
                 lineStyle: { width: 1.8, color: ACCENT }, itemStyle: { color: ACCENT },
                 markLine: {
@@ -81,7 +82,7 @@ export default function FactorsPage() {
     return (
         <div className="ga-page">
             <FilterBar>
-                <Field label="统计天数" hint="days"><Input type="number" min="1" value={f.days}
+                <Field label="统计天数" hint="交易日前推窗口"><Input type="number" min="1" value={f.days}
                                                        onChange={(v) => setF((p) => ({ ...p, days: v }))}/></Field>
                 <Btn variant="primary" onClick={matrix.reload}>刷新</Btn>
             </FilterBar>
@@ -89,7 +90,8 @@ export default function FactorsPage() {
             <AsyncPanel state={matrix} isEmpty={() => features.length === 0} emptyText="暂无因子 IC 数据">
                 {() => (
                     <>
-                        <Card title="特征 × 周期 IC 热力图（ic60 着色，红框 = decayFlag 衰减）">
+                        <Card title={<span>特征 × 周期 <Term id="ic60">IC</Term> 热力图
+                            （<Term id="ic60">ic60</Term> 着色，红框 = <Term id="decayFlag">decayFlag</Term> 衰减）</span>}>
                             <div className="ga-table-wrap">
                                 <table className="ga-heat-table">
                                     <thead>
@@ -113,7 +115,7 @@ export default function FactorsPage() {
                                                         <td key={h}
                                                             className={`ga-heat-cell${r && isDecay(r.decayFlag) ? ' ga-heat-decay' : ''}`}
                                                             style={{ background: icColor(r?.ic60) }}
-                                                            title={`${name} / ${h}日 · ic60=${fmtNum(r?.ic60, 4)} · ic20=${fmtNum(r?.ic20, 4)} · icir60=${fmtNum(r?.icir60, 3)}`}>
+                                                            title={`${name} / ${h}日周期\n近60日 IC = ${fmtNum(r?.ic60, 4)}\n近20日 IC = ${fmtNum(r?.ic20, 4)}\nIC 信息比率 = ${fmtNum(r?.icir60, 3)}\n衰减标记 = ${r && isDecay(r.decayFlag) ? '是' : '否'}`}>
                                                             {r ? fmtNum(r.ic60, 3) : '-'}
                                                         </td>
                                                     );
@@ -125,14 +127,15 @@ export default function FactorsPage() {
                                 </table>
                             </div>
                             <div className="ga-heat-legend">
-                                <span><i style={{ background: 'rgba(216,57,43,0.5)' }}/> ic60 为正（红）</span>
-                                <span><i style={{ background: 'rgba(23,146,78,0.5)' }}/> ic60 为负（绿）</span>
-                                <span><i style={{ background: '#f7f8fa', outline: `2px solid ${UP}` }}/> 红框表示衰减标记</span>
-                                <span>点击任意行查看下方序列</span>
+                                <span><i style={{ background: 'rgba(216,57,43,0.5)' }}/> <Term id="ic60">ic60</Term> 为正（红）</span>
+                                <span><i style={{ background: 'rgba(23,146,78,0.5)' }}/> <Term id="ic60">ic60</Term> 为负（绿）</span>
+                                <span><i style={{ background: '#f7f8fa', outline: `2px solid ${UP}` }}/> 红框 = <Term id="decayFlag">decayFlag</Term> 衰减标记</span>
+                                <span>点击任意行查看下方序列 · <Term id="icir60">icir60</Term> 与 <Term id="ic20">ic20</Term> 见格子悬停提示</span>
                             </div>
                         </Card>
 
-                        <Card title={`因子 ${fmtText(activeFeature)} 的 ic20 / ic60 序列（跨周期）`}>
+                        <Card title={<span>因子 {fmtText(activeFeature)} 的 <Term id="ic20">ic20</Term> /
+                            <Term id="ic60">ic60</Term> 序列（跨周期）</span>}>
                             {activeFeature
                                 ? <GaChart option={factorSeriesOption(featureMap.get(activeFeature) || {})} height={280}/>
                                 : <Empty text="点击上方热力图任意一行查看该因子序列"/>}

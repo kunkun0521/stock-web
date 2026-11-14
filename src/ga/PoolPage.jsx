@@ -7,9 +7,21 @@ import {
     fmtRate, fmtInt, fmtText, marketOf,
 } from './gaUtils.js';
 import GaChart from './GaChart.jsx';
+import Term from './GlossaryTerm.jsx';
 import {
     Card, FilterBar, Field, Select, Input, Btn, AsyncPanel, Pager, Badge, Empty, Timeline,
 } from './GaParts.jsx';
+
+/** 淘汰原因代码 → 中文（英文原文保留在 title 里）。 */
+const REASON_CN = {
+    NEW_LISTING: '次新股', ST: '风险警示股', LOW_LIQUIDITY: '流动性不足',
+    SUSPENDED: '停牌', EXTREME_VOL: '极端波动', DATA_MISSING: '数据缺失',
+    POOR_PREDICTABILITY: '历史难预测', LIMIT_TOUCH: '涨跌停',
+};
+const POOL_STATUS_CN = {
+    ACTIVE: '在池', ELIMINATED: '已淘汰', WHITELIST: '白名单',
+    COOLDOWN: '冷却中', SHADOW: '影子观察',
+};
 
 const DEFAULT_FILTERS = { status: '', reason: '', page: 1, size: 20 };
 // 状态取值契约未明确，给出常见候选，实际以 /api/ga/pool 支持的枚举为准。
@@ -30,7 +42,9 @@ function distributionOption(rows) {
         legend: { type: 'scroll', bottom: 0, textStyle: { color: MUTED, fontSize: 10 } },
         series: [{
             type: 'pie', radius: ['36%', '62%'], center: ['50%', '43%'],
-            data: asArray(rows).map((x) => ({ name: fmtText(x.reasonCode), value: num(x.n) || 0 })),
+            data: asArray(rows).map((x) => ({
+                name: REASON_CN[x.reasonCode] || fmtText(x.reasonCode), value: num(x.n) || 0,
+            })),
             label: { fontSize: 10, color: MUTED },
         }],
     };
@@ -112,8 +126,8 @@ export default function PoolPage() {
     return (
         <div className="ga-page">
             <FilterBar>
-                <Field label="状态"><Select value={f.status} onChange={setFilter('status')} options={STATUS_OPTIONS}/></Field>
-                <Field label="原因代码"><Input value={f.reason} onChange={setFilter('reason')} placeholder="如 LOW_HIT"/></Field>
+                <Field label={<span>状态 <Term id="poolStatus"/></span>}><Select value={f.status} onChange={setFilter('status')} options={STATUS_OPTIONS}/></Field>
+                <Field label={<span>原因代码 <Term id="reasonCode"/></span>}><Input value={f.reason} onChange={setFilter('reason')} placeholder="如 NEW_LISTING / ST"/></Field>
                 <Btn variant="primary" onClick={list.reload}>刷新</Btn>
             </FilterBar>
 
@@ -127,9 +141,9 @@ export default function PoolPage() {
                                         <div className="ga-table-wrap">
                                             <table className="ga-table">
                                                 <thead><tr>
-                                                    <th>代码</th><th>市场</th><th>状态</th><th>原因</th>
-                                                    <th>说明</th><th>起始日</th><th>命中率60</th><th>样本60</th>
-                                                    <th>影子命中20</th><th>影子样本20</th><th>冷却剩余</th>
+                                                    <th>代码</th><th>市场</th><th><Term id="poolStatus">状态</Term></th><th><Term id="reasonCode">原因</Term></th>
+                                                    <th>说明</th><th>起始日</th><th><Term id="hitRate60">命中率60</Term></th><th><Term id="hitRate60">样本60</Term></th>
+                                                    <th><Term id="shadowHitRate20">影子命中20</Term></th><th><Term id="shadowHitRate20">影子样本20</Term></th><th><Term id="cooldown">冷却剩余</Term></th>
                                                 </tr></thead>
                                                 <tbody>
                                                 {items.map((row, i) => {
@@ -142,8 +156,8 @@ export default function PoolPage() {
                                                             onClick={() => setSelected({ code: r.code, market: marketOf(r) })}>
                                                             <td className="ga-mono">{fmtText(r.code)}</td>
                                                             <td>{fmtText(r.market)}</td>
-                                                            <td><Badge tone={statusTone(r.poolStatus)}>{fmtText(r.poolStatus)}</Badge></td>
-                                                            <td>{fmtText(r.reasonCode)}</td>
+                                                            <td><Badge tone={statusTone(r.poolStatus)} title={`英文原值：${fmtText(r.poolStatus)}`}>{POOL_STATUS_CN[r.poolStatus] || fmtText(r.poolStatus)}</Badge></td>
+                                                            <td title={fmtText(r.reasonCode)}>{REASON_CN[r.reasonCode] || fmtText(r.reasonCode)}</td>
                                                             <td className="ga-wrap">{fmtText(r.reasonDetail)}</td>
                                                             <td>{fmtText(r.sinceDate)}</td>
                                                             <td className="ga-num">{fmtRate(r.hitRate60)}</td>
@@ -171,7 +185,7 @@ export default function PoolPage() {
                         </div>
 
                         <div className="ga-grid-2" style={{ marginTop: 12 }}>
-                            <Card title="可预测性排行（按 hitRate60，取前 10）">
+                            <Card title={<span>可预测性排行（按 <Term id="hitRate60">hitRate60</Term> 降序，取前 10）</span>}>
                                 {ranking.length ? (
                                     <div className="ga-table-wrap">
                                         <table className="ga-table">
@@ -183,7 +197,7 @@ export default function PoolPage() {
                                                     <td className="ga-mono">{fmtText(r.code)}</td>
                                                     <td className="ga-num">{fmtRate(r.hitRate60)}</td>
                                                     <td className="ga-num">{fmtInt(r.nVerified60)}</td>
-                                                    <td><Badge tone={statusTone(r.poolStatus)}>{fmtText(r.poolStatus)}</Badge></td>
+                                                    <td><Badge tone={statusTone(r.poolStatus)} title={`英文原值：${fmtText(r.poolStatus)}`}>{POOL_STATUS_CN[r.poolStatus] || fmtText(r.poolStatus)}</Badge></td>
                                                 </tr>
                                             ))}
                                             </tbody>

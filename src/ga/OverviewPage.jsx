@@ -8,6 +8,7 @@ import {
     asArray, asObject, num, fmtRate, fmtNum, fmtInt, fmtText,
 } from './gaUtils.js';
 import GaChart from './GaChart.jsx';
+import Term from './GlossaryTerm.jsx';
 import {
     Card, KpiGrid, KpiCard, FilterBar, Field, Select, Input, Btn, AsyncPanel, Empty,
 } from './GaParts.jsx';
@@ -128,14 +129,14 @@ export default function OverviewPage() {
     const monthly = monthlyAgg(trend);
 
     const kpiCards = [
-        { label: '整体命中率', value: fmtRate(kpi.hitRate), tone: 'accent', hint: '全部已验证样本' },
-        { label: '看涨命中率', value: fmtRate(kpi.upHitRate), tone: 'up', hint: '预测上涨的样本' },
-        { label: '看跌命中率', value: fmtRate(kpi.downHitRate), tone: 'down', hint: '预测下跌的样本' },
-        { label: '覆盖率', value: fmtRate(kpi.coverage), tone: 'plain', hint: '有预测信号的占比' },
-        { label: '平均 IC', value: fmtNum(kpi.avgIc, 4), tone: 'plain', hint: '预测与真实收益相关性' },
-        { label: '已验证样本', value: fmtInt(kpi.nVerified), tone: 'plain', hint: '完成结果核对的条数' },
-        { label: '冠军版本', value: fmtText(kpi.championVersion), tone: 'plain', hint: `生效 ${fmtText(kpi.effectiveFrom)}` },
-        { label: '淘汰数量', value: fmtInt(kpi.eliminatedCount), tone: 'muted', hint: '当前被剔除的标的' },
+        { label: '整体命中率', value: fmtRate(kpi.hitRate), tone: 'accent', hint: '全部已验证样本', term: 'hitRate' },
+        { label: '看涨命中率', value: fmtRate(kpi.upHitRate), tone: 'up', hint: '预测上涨的样本', term: 'upHitRate' },
+        { label: '看跌命中率', value: fmtRate(kpi.downHitRate), tone: 'down', hint: '预测下跌的样本', term: 'downHitRate' },
+        { label: '覆盖率', value: fmtRate(kpi.coverage), tone: 'plain', hint: '有预测信号的占比', term: 'coverage' },
+        { label: '平均 IC', value: fmtNum(kpi.avgIc, 4), tone: 'plain', hint: '预测与真实收益相关性', term: 'avgIc' },
+        { label: '已验证样本', value: fmtInt(kpi.nVerified), tone: 'plain', hint: '完成结果核对的条数', term: 'nVerified' },
+        { label: '冠军版本', value: fmtText(kpi.championVersion), tone: 'plain', hint: `生效 ${fmtText(kpi.effectiveFrom)}`, term: 'championVersion' },
+        { label: '淘汰数量', value: fmtInt(kpi.eliminatedCount), tone: 'muted', hint: '当前被剔除的标的', term: 'eliminatedCount' },
     ];
 
     // 日历网格：周一为第一列。
@@ -161,8 +162,8 @@ export default function OverviewPage() {
                 <Field label="起始日期"><Input type="date" value={f.from} onChange={set('from')}/></Field>
                 <Field label="结束日期"><Input type="date" value={f.to} onChange={set('to')}/></Field>
                 <Field label="板块"><Select value={f.board} onChange={set('board')} options={BOARD_OPTIONS}/></Field>
-                <Field label="口径"><Select value={f.strict} onChange={set('strict')} options={STRICT_OPTIONS}/></Field>
-                <Field label="回放"><Select value={f.includeReplay} onChange={set('includeReplay')} options={REPLAY_OPTIONS}/></Field>
+                <Field label={<span>口径 <Term id="strict"/></span>}><Select value={f.strict} onChange={set('strict')} options={STRICT_OPTIONS}/></Field>
+                <Field label={<span>回放 <Term id="isReplay"/></span>}><Select value={f.includeReplay} onChange={set('includeReplay')} options={REPLAY_OPTIONS}/></Field>
                 <Field label="滚动窗口" hint="交易日"><Input type="number" min="1" value={f.window} onChange={set('window')}/></Field>
                 <Btn variant="primary" onClick={() => { main.reload(); cal.reload(); }}>刷新</Btn>
             </FilterBar>

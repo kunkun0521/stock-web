@@ -10,6 +10,7 @@ import {
     asArray, asObject, num, fmtNum, fmtInt, fmtText,
 } from './gaUtils.js';
 import GaChart from './GaChart.jsx';
+import Term from './GlossaryTerm.jsx';
 import {
     Card, FilterBar, Field, Select, Input, Btn, AsyncPanel, Pager, Badge, Empty,
 } from './GaParts.jsx';
@@ -215,8 +216,10 @@ export default function EvolutionPage() {
                             <div className="ga-table-wrap">
                                 <table className="ga-table">
                                     <thead><tr>
-                                        <th>runId</th><th>周期</th><th>类型</th><th>基准日</th><th>代数</th>
-                                        <th>最优适应度</th><th>状态</th><th>告警</th><th>错误</th><th>开始</th><th>结束</th>
+                                        <th><Term id="runId">runId</Term></th><th><Term id="horizon">周期</Term></th>
+                                        <th><Term id="runType">类型</Term></th><th>基准日</th><th><Term id="generation">代数</Term></th>
+                                        <th><Term id="fitness">最优适应度</Term></th><th><Term id="runStatus">状态</Term></th>
+                                        <th>告警</th><th>错误</th><th>开始</th><th>结束</th>
                                     </tr></thead>
                                     <tbody>
                                     {runItems.map((row, i) => {
@@ -253,7 +256,7 @@ export default function EvolutionPage() {
             </Card>
 
             <Card title="收敛诊断" extra={
-                selectedRunId ? <Badge tone="accent">runId {fmtText(selectedRunId)}</Badge> : <span className="ga-muted">请先在上方列表点选一行</span>
+                selectedRunId ? <Badge tone="accent"><Term id="runId">runId</Term> {fmtText(selectedRunId)}</Badge> : <span className="ga-muted">请先在上方列表点选一行</span>
             }>
                 <AsyncPanel state={gens} isEmpty={(d) => asArray(d).length === 0} emptyText="该运行暂无逐代数据">
                     {() => (
@@ -282,9 +285,11 @@ export default function EvolutionPage() {
                             <div className="ga-table-wrap ga-scroll-y">
                                 <table className="ga-table">
                                     <thead><tr>
-                                        <th>个体</th><th>周期</th><th>代</th><th>适应度</th><th>训练</th>
-                                        <th>验证</th><th>平衡准度</th><th>IC</th><th>覆盖</th><th>Brier</th>
-                                        <th>状态</th><th>退役原因</th><th>激活因子</th>
+                                        <th>个体</th><th><Term id="horizon">周期</Term></th><th><Term id="generation">代</Term></th>
+                                        <th><Term id="fitness">适应度</Term></th><th><Term id="fitTrain">训练</Term></th>
+                                        <th><Term id="fitValid">验证</Term></th><th><Term id="BalAcc">平衡准度</Term></th>
+                                        <th><Term id="IC">IC</Term></th><th><Term id="coverageValid">覆盖</Term></th><th><Term id="Brier">Brier</Term></th>
+                                        <th><Term id="individualStatus">状态</Term></th><th>退役原因</th><th>激活因子</th>
                                     </tr></thead>
                                     <tbody>
                                     {hall.map((row, i) => {
@@ -365,7 +370,7 @@ export default function EvolutionPage() {
                 <div className="ga-stack">
                     <div className="ga-inline-form">
                         <span className="ga-muted" style={{ minWidth: 72 }}>触发进化</span>
-                        <Badge tone="info">horizon = {f.horizon || '全部'}</Badge>
+                        <Badge tone="info"><Term id="horizon">horizon</Term> = {f.horizon || '全部'}</Badge>
                         <Btn variant="primary" disabled={busy === 'run'} onClick={triggerRun}>触发进化</Btn>
                     </div>
                     <div className="ga-inline-form">
@@ -381,7 +386,7 @@ export default function EvolutionPage() {
                     </div>
                     <div className="ga-inline-form">
                         <span className="ga-muted" style={{ minWidth: 72 }}>晋升冠军</span>
-                        <Field label="runId" hint="留空用选中运行">
+                        <Field label={<span><Term id="runId">runId</Term> 运行编号</span>} hint="留空用选中运行">
                             <Input className="ga-input--wide" value={promoteRunId} onChange={setPromoteRunId}
                                    placeholder={selectedRunId ? String(selectedRunId) : '填写 runId'}/>
                         </Field>

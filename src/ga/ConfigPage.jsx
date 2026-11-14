@@ -3,6 +3,7 @@ import { useApi } from '../hooks/useApi.js';
 import { usePersistedState } from '../hooks/usePersistedState.js';
 import { getConfig, putConfig } from './api.js';
 import { asArray, asObject, fmtText } from './gaUtils.js';
+import Term from './GlossaryTerm.jsx';
 import {
     Card, FilterBar, Field, Input, Select, Btn, AsyncPanel, Badge,
 } from './GaParts.jsx';
@@ -136,7 +137,7 @@ export default function ConfigPage() {
     return (
         <div className="ga-page">
             <FilterBar>
-                <Field label="作用域" hint="周期级覆盖 GLOBAL">
+                <Field label={<span>作用域 <Term id="GLOBAL"/></span>} hint="周期级同名参数会覆盖全局">
                     <Select className="ga-input--wide" value={scope} onChange={(v) => { setScope(v); setEdits({}); }}
                             options={SCOPE_OPTIONS}/>
                 </Field>
@@ -155,18 +156,19 @@ export default function ConfigPage() {
             </FilterBar>
 
             <div className="ga-note">
-                参数写入 <span className="ga-mono">ga_config</span> 后立即刷新后端缓存，下一次任务生效，无需重启服务；
+                参数写入 <Term id="gaConfig">ga_config</Term> 后立即刷新后端缓存，下一次任务生效，无需重启服务；
                 「恢复默认」按代码内置默认值写回。后台任务请到顶部的「后台任务」页操作。
+                <strong> 看不懂某个英文参数键？点顶部「? 指标说明」，里面能搜到全部参数的中文解释。</strong>
             </div>
 
-            <Card title={`参数配置 · ga_config（${SCOPE_OPTIONS.find((o) => o.value === scope)?.label || scope}）`}>
+            <Card title={<span>参数配置 · <Term id="gaConfig">ga_config</Term>（{SCOPE_OPTIONS.find((o) => o.value === scope)?.label || scope}）</span>}>
                 <AsyncPanel state={cfg} isEmpty={(d) => asArray(asObject(d).items).length === 0}
                             emptyText="该作用域暂无配置项">
                     {() => (
                         <div className="ga-table-wrap">
                             <table className="ga-table ga-config-table">
                                 <thead><tr>
-                                    <th>作用域</th><th>参数键</th><th>当前值（可编辑）</th><th>默认值</th>
+                                    <th><Term id="GLOBAL">作用域</Term></th><th><Term id="gaConfig">参数键</Term></th><th>当前值（可编辑）</th><th>默认值</th>
                                     <th>说明</th><th>更新时间</th><th>操作</th>
                                 </tr></thead>
                                 <tbody>
@@ -176,10 +178,10 @@ export default function ConfigPage() {
                                     const def = defaults[row.paramKey];
                                     return (
                                         <tr key={key || i} className={dirty ? 'ga-config-dirty' : ''}>
-                                            <td><Badge tone={fmtText(row.scope) === 'GLOBAL' ? 'muted' : 'info'}>
-                                                {fmtText(row.scope)}
+                                            <td><Badge tone={fmtText(row.scope) === 'GLOBAL' ? 'muted' : 'info'} title={`英文原值：${fmtText(row.scope)}`}>
+                                                {fmtText(row.scope) === 'GLOBAL' ? '全局' : fmtText(row.scope)}
                                             </Badge></td>
-                                            <td className="ga-mono">{fmtText(row.paramKey)}</td>
+                                            <td className="ga-mono" title={`${fmtText(row.paramKey)}\n${fmtText(row.description)}`}>{fmtText(row.paramKey)}</td>
                                             <td>
                                                 <Input className="ga-input--wide" value={valueOf(row)}
                                                        onChange={(v) => setEdits((p) => ({ ...p, [key]: v }))}/>

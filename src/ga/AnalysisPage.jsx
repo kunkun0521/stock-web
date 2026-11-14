@@ -9,6 +9,7 @@ import {
     asArray, asObject, num, fmtRate, fmtNum, fmtInt, fmtText, formatPct,
 } from './gaUtils.js';
 import GaChart from './GaChart.jsx';
+import Term from './GlossaryTerm.jsx';
 import {
     FilterBar, Field, Select, Input, Btn, GaTabs, AsyncPanel, Badge,
 } from './GaParts.jsx';
@@ -164,7 +165,8 @@ export default function AnalysisPage() {
                 <>
                     <div className="ga-row" style={{ marginBottom: 8 }}>
                         <Badge tone="accent">ECE（校准误差） {fmtNum(rel.ece, 4)}</Badge>
-                        <span className="ga-muted">越接近 0 表示预测概率越可信</span>
+                        <Term id="ECE">ECE</Term>
+                        <span className="ga-muted">越接近 0 表示预测概率越可信；超 0.05 建议跑 CalibrateJob</span>
                     </div>
                     <GaChart option={reliabilityOption(rel)} height={320}/>
                 </>
@@ -200,14 +202,14 @@ export default function AnalysisPage() {
             return (
                 <>
                     <div className="ga-row" style={{ marginBottom: 8 }}>
-                        <span className="ga-muted">Top N</span>
+                        <Term id="TopN">Top N</Term>
                         <Input type="number" min="1" max="100" value={topN} onChange={setTopN}/>
                     </div>
                     <div className="ga-table-wrap">
                         <table className="ga-table">
                             <thead><tr>
-                                <th>代码</th><th>交易日</th><th>周期</th><th>上涨概率</th>
-                                <th>置信度</th><th>真实收益</th><th>主要解释</th>
+                                <th>代码</th><th>交易日</th><th><Term id="horizon">周期</Term></th><th><Term id="probUp">上涨概率</Term></th>
+                                <th><Term id="confidence">置信度</Term></th><th><Term id="actualReturn">真实收益</Term></th><th><Term id="explain">主要解释</Term></th>
                             </tr></thead>
                             <tbody>
                             {asArray(d).map((e, i) => (
@@ -234,6 +236,9 @@ export default function AnalysisPage() {
                 <div className="ga-row" style={{ marginBottom: 8 }}>
                     <Badge tone="info">单调性 {fmtNum(q.monotonicity, 3)}</Badge>
                     <Badge tone="info">多空价差 {fmtNum(q.spread, 3)}</Badge>
+                    <Term id="monotonicity">单调性</Term>
+                    <Term id="spread">多空价差</Term>
+                    <Term id="quantile">分层回测</Term>
                 </div>
                 <GaChart option={quantileOption(q)} height={320}/>
             </>

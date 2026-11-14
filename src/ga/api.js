@@ -97,3 +97,17 @@ export const postScheduleToggle = ({ enabled } = {}) =>
     apiPost(`${P}/jobs/schedule/toggle`, { enabled });
 export const postScheduleFire = ({ kind } = {}) =>
     apiPost(`${P}/jobs/schedule/fire`, { kind });
+
+// ---------------------------------------------------------------- 数据体检 / 清理
+/** 只读体检：脏数据条数、保留期待删行数、表占用、策略与受保护表。 */
+export const getCleanupInspect = () => apiGet(`${P}/cleanup/inspect`);
+export const getCleanupPolicy = () => apiGet(`${P}/cleanup/policy`);
+export const getCleanupHistory = ({ limit = 30 } = {}) =>
+    apiGet(`${P}/cleanup/history`, { limit });
+
+/**
+ * 执行修复 / 清理。默认 dryRun=true 只预览；真实执行必须同时传 dryRun=false 与 confirm=true。
+ * mode: 'repair' | 'purge' | 'all'
+ */
+export const postCleanupRun = ({ mode = 'all', dryRun = true, confirm = false } = {}) =>
+    apiPost(`${P}/cleanup/run`, { mode, dryRun, confirm });

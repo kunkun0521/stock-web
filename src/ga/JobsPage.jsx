@@ -4,6 +4,7 @@ import {
     postJobRun, postScheduleToggle, postScheduleFire,
 } from './api.js';
 import { asArray, asObject, fmtText } from './gaUtils.js';
+import { useGlossary } from './GlossaryContext.jsx';
 import {
     Card, FilterBar, Field, Select, Btn, Badge, Empty, ErrorBox,
 } from './GaParts.jsx';
@@ -37,6 +38,7 @@ const JOB_HINTS = {
     CalibrateJob: '重拟合 Platt 校准参数',
     FactorIcJob: '计算各周期的因子 IC 体检',
     ReplayJob: '按默认区间做历史回放（耗时较长）',
+    CleanupJob: '数据清理：体检脏数据、修复并重算指标、按保留期删除长期不用的历史数据（默认只预览，需把 cleanup_dry_run 置 0 才真删；详细预览见「数据清理」页）',
     DailyPipeline: '日链路：特征 → 预测 → 回填 → 指标 → 淘汰 → 晋升检查',
     WeeklyEvolve: '周链路：5 个周期进化 → 准入 → 校准 → 因子体检 → 淘汰',
 };
@@ -74,6 +76,7 @@ function shortMessage(text, max = 90) {
 }
 
 export default function JobsPage() {
+    const { open } = useGlossary();
     const [auto, setAuto] = useState(true);
     const [pollMs, setPollMs] = useState('3000');
     const [limit, setLimit] = useState('40');
@@ -348,7 +351,13 @@ export default function JobsPage() {
 
             {/* ---------------------------------------------------- 任务清单 */}
             <Card title={`后台任务 · ${rows.length || 11} 个`} extra={
-                <span className="ga-muted">触发后自动跟踪结果</span>
+                <div className="ga-row">
+                    <span className="ga-muted">触发后自动跟踪结果</span>
+                    <Btn sm variant="ghost" onClick={() => open({ group: 'job' })}
+                         title="每个英文任务名做什么、什么时候跑，这里都有中文解释">
+                        ? 任务名说明
+                    </Btn>
+                </div>
             }>
                 {loading && !rows.length ? <div className="ga-loading">加载中…</div> : null}
                 {!loading && !rows.length && !error ? <Empty text="暂无任务状态"/> : null}

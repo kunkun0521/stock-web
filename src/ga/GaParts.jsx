@@ -1,4 +1,5 @@
 import { fmtInt, fmtNum, fmtText } from './gaUtils.js';
+import Term from './GlossaryTerm.jsx';
 
 /* ---------------------------------------------------------------- 卡片 / 栅格 */
 
@@ -22,11 +23,11 @@ export function KpiGrid({ children }) {
     return <div className="ga-kpi-grid">{children}</div>;
 }
 
-/** 单张 KPI 卡。tone 取 up/down/accent/muted/plain。 */
-export function KpiCard({ label, value, hint, tone = 'plain' }) {
+/** 单张 KPI 卡。tone 取 up/down/accent/muted/plain；term 指向 glossary.js 的词条 id。 */
+export function KpiCard({ label, value, hint, tone = 'plain', term }) {
     return (
         <div className="ga-kpi">
-            <div className="ga-kpi-label">{label}</div>
+            <div className="ga-kpi-label">{label}{term ? <Term id={term}/> : null}</div>
             <div className={`ga-kpi-value ga-tone-${tone}`}>{value}</div>
             {hint ? <div className="ga-kpi-hint">{hint}</div> : null}
         </div>
