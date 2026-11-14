@@ -79,6 +79,8 @@
 
 .quant-grid-2 { display: grid; grid-template-columns: 1.15fr .85fr; gap: 12px; }
 .quant-kpi-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+/* 今日信号：5 张汇总卡（候选 / 策略 / 评分 / 止损空间 / 风险） */
+.quant-kpi-grid--5 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
 
 .quant-metrics-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
 .quant-metrics-head .ga-tabs { border-bottom: none; padding: 0; }
@@ -120,6 +122,7 @@
     .quant-strategy-card { min-width: 260px; }
     .quant-grid-2 { grid-template-columns: 1fr; }
     .quant-kpi-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .quant-kpi-grid--5 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 
 @media (max-width: 900px) {
@@ -127,6 +130,7 @@
     .quant-head-right { justify-content: flex-start; }
     .quant-status-text { text-align: left; max-width: none; }
     .quant-kpi-grid, .quant-event-head { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .quant-kpi-grid--5 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 .quant-ref-strip {
@@ -147,3 +151,47 @@
     white-space: nowrap;
 }
 .quant-signal-table tbody tr:hover .quant-row-link { text-decoration: underline; }
+
+/* ---------------------------------------------------------------- 今日信号 */
+.quant-scan-hint { margin-left: auto; font-size: 11.5px; }
+.quant-signal-tools { margin-left: auto; }
+
+/* 评分：数值 + 细进度条（0~100 是当日候选内的百分位加权分） */
+.quant-score { display: flex; flex-direction: column; gap: 3px; min-width: 58px; }
+.quant-score-num { font-variant-numeric: tabular-nums; font-weight: 600; }
+.quant-score-track { display: block; height: 4px; background: #eef0f3; border-radius: 3px; overflow: hidden; }
+.quant-score-fill { display: block; height: 100%; background: var(--ga-accent); border-radius: 3px; }
+
+.quant-strategy-tag { font-size: 11.5px; color: var(--ga-muted); white-space: nowrap; }
+
+/* 触发条件：默认两行截断，展开后看全文（避免一列长文本把表撑爆） */
+.quant-cell-text { font-size: 11.5px; color: #4b5563; line-height: 1.55; max-width: 420px; }
+.quant-cell-text.is-clamp {
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.quant-expand {
+    border: 0; background: none; padding: 0; margin-top: 2px;
+    color: var(--ga-accent); font: inherit; font-size: 11px; cursor: pointer;
+}
+.quant-expand:hover { text-decoration: underline; }
+
+.quant-signal-legend {
+    display: flex; flex-wrap: wrap; gap: 6px 18px;
+    padding: 8px 14px 12px; font-size: 11.5px; color: var(--ga-muted);
+    border-top: 1px dashed var(--ga-border);
+}
+.quant-signal-legend b { color: var(--ga-text); font-weight: 600; }
+.quant-legend-note { margin-left: auto; }
+
+.quant-signal-empty { padding: 18px 4px; }
+.quant-signal-empty p { margin: 0 0 10px; }
+.quant-signal-empty .ga-row { gap: 8px; }
+
+.quant-toast { font-size: 11.5px; color: var(--ga-accent); white-space: nowrap; }
+
+@media (max-width: 760px) {
+    .quant-scan-hint { margin-left: 0; }
+    .quant-signal-tools { margin-left: 0; width: 100%; flex-wrap: wrap; }
+    .quant-signal-tools .ga-picks-search { width: 100%; }
+    .quant-legend-note { margin-left: 0; }
+}
