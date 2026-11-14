@@ -29,7 +29,7 @@ import GaApp from './ga/GaApp.jsx';
 | `gaUtils.js` | 共享常量（周期/板块/枚举选项）、格式化、防御性兜底、`GA_BASE`、`guessMarket` |
 | `ga.css` | 全部 `.ga-` 前缀样式，浅色紧凑，窄屏表格横向滚动、栅格降为单列 |
 | `GaChart.jsx` | ECharts 封装（整包 `echarts`，init + ResizeObserver + 卸载 dispose） |
-| `GaParts.jsx` | 共享 UI：Card / KpiCard / Badge / FilterBar / Field / Select / Input / Btn / GaTabs / Pager / MiniBar / Timeline / Empty / Loading / ErrorBox / AsyncPanel |
+| `GaParts.jsx` | 共享 UI：Card / KpiCard / Badge / FilterBar / Field / Select / Input / Btn / RefreshBtn / Spinner / ApiActivityBar / GaTabs / Pager / MiniBar / Timeline / Empty / Loading / ErrorBox / AsyncPanel |
 | `OverviewPage.jsx` | 总览 |
 | `PredictionsPage.jsx` | 预测复盘 |
 | `AnalysisPage.jsx` | 错误分析 |
@@ -39,6 +39,7 @@ import GaApp from './ga/GaApp.jsx';
 | `PicksPage.jsx` | 每日选股 |
 | `ConfigPage.jsx` | 参数配置（作用域切换 / 搜索 / 批量保存 / 恢复默认） |
 | `JobsPage.jsx` | **后台任务独立页**：定时调度、任务清单、运行历史、触发结果跟踪 |
+| `CleanupPage.jsx` | **数据清理独立页**：只读体检（11 类脏数据 + 保留期预览）、修复 / 清理预览与执行、执行历史；配合后端 `CleanupJob` / `GaCleanupService` |
 | `kline.js` | 个股 K 线：前端推导 MA5/10/20/60、量能 MA5、MACD(12,26,9)，构造三宫格 ECharts option 与 tooltip；`isVerified/isCorrect` 兼容 tinyint 1/0 |
 | `StockPage.jsx` | 个股详情：K 线独占整行（三宫格 + 预测标记 + 缩放），最新预测/因子贡献、命中率、时间线、口径说明 |
 | `glossary.js` | **指标说明书数据源**：8 个分组的静态术语（英文原名 / 中文名 / 定义 / 公式 / 怎么看）+ 4 类告警处置 SOP |
@@ -71,6 +72,19 @@ import GaApp from './ga/GaApp.jsx';
 
 新增前端英文指标时，只需在 `glossary.js` 的 `TERMS` 加一条，再在页面用 `<Term id="...">` 包住即可，
 弹窗与就地解释同时生效；`Term` 找不到 id 会原样输出文本，不会报错。
+
+## 数据清理页（CleanupPage）
+
+后端 `CleanupJob` / `GaCleanupService` 的前端入口，对应接口 `GET /api/ga/cleanup/inspect`、
+`GET /api/ga/cleanup/policy`、`POST /api/ga/cleanup/run`、`GET /api/ga/cleanup/history`。
+
+- **体检**：只读展示 11 类脏数据条数（命中判定缺失、未来日期 IC、倒挂冠军窗口、僵死进化、负耗时日志等）、
+  各表空间占用、按保留期算出的待删行数、受保护表清单。`<Term>` 角标解释关键英文指标。
+- **修复 / 清理**：可勾选 `repair`（幂等重算脏数据）与 `purge`（按保留期分批删除长期不用数据）两种模式，
+  默认 `dryRun` 预览、需 `confirm` 才真删；执行后给出每类处理行数与汇总，并在 `ga_cleanup_log` 留审计。
+- **安全**：白名单（仅 11 张表可删，行情/配置/股票池/冠军集等永不在范围）、安全下限（最近 30 自然日不可删，
+  特征/行情缓存下限更高以覆盖 GA 训练窗口）、单次上限与分批删除；定时任务永远只预览不删。
+- **历史**：列出历次清理执行记录（模式、是否预览、处理行数、耗时、摘要）。
 
 ## 页面覆盖的契约接口
 
@@ -109,6 +123,17 @@ import GaApp from './ga/GaApp.jsx';
 - **错误与空态**：每个请求都经 `AsyncPanel` 统一渲染——失败显示 `ErrorBox`（原因 + 排查 + 重试）、
   首次加载显示 Loading、数据为空显示 Empty，页面骨架不白屏。写操作（override / 进化 / 回放 / 晋升 /
   回滚 / 保存配置 / 运行任务）用 try/catch 后在页面内提示成功或失败。
+- **加载反馈（点了要知道有没有生效）**：后端慢时不能只靠「数据变了」来判断点击是否成功，故统一三层反馈：
+  1. **按钮级**：刷新一律用 `<RefreshBtn state|states>`，点击即转圈禁用，超过 1 秒显示「刷新中 3s」，
+     完成后显示「已更新 14:32:05」，失败显示红色「上次刷新失败」；写操作用 `<Btn loading={busy}>`
+     显示转圈 + 自定义文案（如「保存中…」「执行中，请勿关闭页面…」）。
+  2. **内容级**：`AsyncPanel` 在已有数据再次加载时不清空、只降透明度并屏蔽点击（`.ga-busy.is-refreshing`），
+     避免把旧数据当成新数据，也避免重复点击叠加请求。
+  3. **全局级**：`ApiActivityBar` 订阅 `useApi` 的在途请求计数，任一请求超过 400ms 就在顶部出进度条、
+     右下角出「正在加载数据 · 已等待 Ns」，≥8 秒提示「后端响应较慢，请不要重复点击」。
+- **`useApi` 契约**：返回 `{ data, loading, error, reload, refreshing, updatedAt }`；`reload()` 返回
+  Promise，在本次请求真正结束（成功或失败）后兑现，供 `RefreshBtn` 判定「刷新完成」。
+  `reload()` 内部会先删掉对应 `cacheKey` 再重拉，因此「刷新」一定拿到最新数据而不是缓存。
 - **防御性兜底**：`asArray / asObject / num / fmtXxx` 保证字段缺失或类型不符时不报错，缺值显示 `-`。
 - **筛选持久化**：全部用 `usePersistedState`，key 统一 `ga:` 前缀，例如
   `ga:overview:filters`、`ga:predictions:filters`、`ga:analysis:tab`、`ga:picks:filters` 等。

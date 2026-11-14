@@ -6,7 +6,7 @@ import {
 import { asArray, asObject, fmtInt, fmtText } from './gaUtils.js';
 import Term from './GlossaryTerm.jsx';
 import {
-    Card, KpiGrid, KpiCard, Badge, Btn, Select, Empty, ErrorBox, Loading,
+    Card, KpiGrid, KpiCard, Badge, Btn, Select, Empty, ErrorBox, Loading, RefreshBtn,
 } from './GaParts.jsx';
 
 /**
@@ -84,7 +84,7 @@ export default function CleanupPage() {
 
     return (
         <div className="ga-page">
-            <Card title="数据体检" extra={<Btn sm onClick={reload}>刷新</Btn>}>
+            <Card title="数据体检" extra={<RefreshBtn sm variant="" states={[inspect, history]} label="刷新"/>}>
                 {inspect.error ? <ErrorBox message={inspect.error} onRetry={reload}/> : null}
                 {inspect.loading && inspect.data === undefined ? <Loading/> : null}
                 {inspect.data !== undefined ? (
@@ -199,12 +199,11 @@ export default function CleanupPage() {
                         <span className="ga-field-label">执行范围</span>
                         <Select value={mode} onChange={setMode} options={MODE_OPTIONS}/>
                     </label>
-                    <Btn variant="primary" disabled={!!busy} onClick={() => run(true)}>
-                        {busy === 'preview' ? '预览中…' : '① 预览（不写库）'}
-                    </Btn>
-                    <Btn variant="danger" disabled={!!busy || !confirmed} onClick={() => run(false)}>
-                        {busy === 'execute' ? '执行中…' : '② 确认执行'}
-                    </Btn>
+                    <Btn variant="primary" loading={busy === 'preview'} loadingText="预览中，请稍候…"
+                         onClick={() => run(true)}>① 预览（不写库）</Btn>
+                    <Btn variant="danger" disabled={!confirmed}
+                         loading={busy === 'execute'} loadingText="执行中，请勿关闭页面…"
+                         onClick={() => run(false)}>② 确认执行</Btn>
                 </div>
                 <label className="ga-cleanup-confirm">
                     <input type="checkbox" checked={confirmed}
@@ -245,10 +244,7 @@ export default function CleanupPage() {
                 ) : null}
             </Card>
 
-            <Card title="清理审计历史" extra={<Btn sm onClick={() => {
-                invalidateApiCache('ga:cleanup:history');
-                history.reload();
-            }}>刷新</Btn>}>
+            <Card title="清理审计历史" extra={<RefreshBtn sm variant="" state={history} label="刷新"/>}>
                 {history.error ? <ErrorBox message={history.error}/> : null}
                 {history.loading && history.data === undefined ? <Loading/> : null}
                 {asArray(history.data).length === 0 ? <Empty text="尚无清理记录"/> : (

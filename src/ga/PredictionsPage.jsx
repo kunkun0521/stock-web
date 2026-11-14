@@ -11,7 +11,7 @@ import {
 import Term from './GlossaryTerm.jsx';
 import { isVerified, isCorrect } from './kline.js';
 import {
-    Card, FilterBar, Field, Select, Input, Btn, AsyncPanel, Pager, Badge, Tag, Empty,
+    Card, FilterBar, Field, Select, Input, AsyncPanel, Pager, Badge, Tag, Empty, RefreshBtn,
 } from './GaParts.jsx';
 
 const DEFAULT_FILTERS = {
@@ -98,7 +98,7 @@ export default function PredictionsPage() {
                 <Field label="是否在池"><Select value={f.inPool} onChange={setFilter('inPool')} options={INPOOL_OPTIONS}/></Field>
                 <Field label="排序"><Select value={f.sort} onChange={setFilter('sort')} options={SORT_OPTIONS}/></Field>
                 <a className="ga-btn" href={exportUrl} target="_blank" rel="noreferrer">导出 CSV</a>
-                <Btn variant="primary" onClick={main.reload}>刷新</Btn>
+                <RefreshBtn state={main}/>
             </FilterBar>
 
             <Card title="预测明细" flush extra={

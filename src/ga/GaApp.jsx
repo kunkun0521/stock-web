@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import { NavLink, Navigate, Route, Routes } from 'react-router-dom';
-import { useApi, invalidateApiCache } from '../hooks/useApi.js';
+import { useApi, invalidateApiCache, apiPendingCount } from '../hooks/useApi.js';
 import { getOverview } from './api.js';
 import { asArray, fmtText, GA_BASE } from './gaUtils.js';
-import { ErrorBox, Btn } from './GaParts.jsx';
+import { ErrorBox, Btn, ApiActivityBar } from './GaParts.jsx';
 import { GlossaryProvider, useGlossary } from './GlossaryContext.jsx';
 import GlossaryModal from './GlossaryModal.jsx';
 import { matchAlert } from './glossary.js';
@@ -52,17 +52,46 @@ function GaShell() {
     const alerts = asArray(head.data?.alerts);
     const [pageKey, setPageKey] = useState(0);
     const [checkedAt, setCheckedAt] = useState(null);
+    const [hardBusy, setHardBusy] = useState(false);
+    const [hardElapsed, setHardElapsed] = useState(0);
     const { open } = useGlossary();
 
     useEffect(() => {
         if (head.data !== undefined || head.error) setCheckedAt(new Date());
     }, [head.data, head.error]);
 
-    /** 全局刷新：清掉请求缓存 + 重挂当前页（页面内所有接口重新拉取）。 */
-    const hardRefresh = () => {
+    // 全局刷新耗时计时，让「刷新本页」在慢后端下也有明确的等待反馈。
+    useEffect(() => {
+        if (!hardBusy) {
+            setHardElapsed(0);
+            return undefined;
+        }
+        const start = Date.now();
+        const t = setInterval(() => setHardElapsed(Math.floor((Date.now() - start) / 1000)), 500);
+        return () => clearInterval(t);
+    }, [hardBusy]);
+
+    /**
+     * 全局刷新：清掉请求缓存 + 重挂当前页（页面内所有接口重新拉取）。
+     * 必须等页面内重挂后的请求也结束才恢复按钮，否则慢后端下按钮立刻复原，
+     * 用户会以为「点了没生效」。
+     */
+    const hardRefresh = async () => {
+        if (hardBusy) return;
+        setHardBusy(true);
         invalidateApiCache();
         head.reload();
         setPageKey((k) => k + 1);
+        try {
+            const deadline = Date.now() + 8000;
+            // 先让页面重挂后的 effect 排上队，再等在途请求归零。
+            await new Promise((r) => setTimeout(r, 150));
+            while (apiPendingCount() > 0 && Date.now() < deadline) {
+                await new Promise((r) => setTimeout(r, 120));
+            }
+        } finally {
+            setHardBusy(false);
+        }
     };
 
     const connTone = head.error ? 'err' : head.loading && !head.data ? 'wait' : 'ok';
@@ -70,9 +99,10 @@ function GaShell() {
 
     return (
         <div className="ga-root">
+            <ApiActivityBar/>
             <header className="ga-head">
                 <div className="ga-head-row">
-                    <h1 className="ga-title">遗传算法涨跌预测</h1>
+                    <h1 className="ga-title">遗传-涨跌预测</h1>
                     <span className="ga-disclaimer">仅用于研究与复盘，不构成投资建议</span>
                     <div className="ga-head-tools">
                         <span className={`ga-conn ga-conn--${connTone}`} title="与 /api/ga 的连接状态">
@@ -83,7 +113,10 @@ function GaShell() {
                              title="所有英文指标、状态值、任务名的中文解释，以及告警处置指引">
                             ? 指标说明
                         </Btn>
-                        <Btn sm onClick={hardRefresh}>刷新本页</Btn>
+                        <Btn sm loading={hardBusy}
+                             loadingText={hardElapsed >= 1 ? `刷新中 ${hardElapsed}s` : '刷新中…'}
+                             title="清空缓存并重新拉取当前页的所有数据"
+                             onClick={hardRefresh}>刷新本页</Btn>
                     </div>
                 </div>
                 <nav className="ga-nav" aria-label="遗传算法模块导航">

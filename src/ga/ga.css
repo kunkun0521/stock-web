@@ -602,9 +602,195 @@
 .ga-cleanup-result ul { margin: 10px 0 12px; padding-left: 20px; font-size: 12px; line-height: 1.9; }
 .ga-cleanup-result ul li { color: var(--ga-text); }
 
+/* ---------------------------------------------------------------- 每日选股页 */
+.ga-picks-toolbar {
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+    padding: 8px 14px; border-bottom: 1px solid var(--ga-border);
+    background: var(--ga-card);
+}
+.ga-picks-toolbar .ga-tabs { border-bottom: 0; padding: 0; }
+.ga-picks-search { width: 156px; }
+.ga-picks-table { min-width: 880px; }
+.ga-picks-table th { white-space: nowrap; }
+.ga-picks-rank {
+    width: 34px; text-align: right; color: var(--ga-muted);
+    font-variant-numeric: tabular-nums;
+}
+.ga-picks-row:focus-visible { outline: 2px solid var(--ga-accent); outline-offset: -2px; }
+.ga-picks-name { display: flex; flex-direction: column; gap: 1px; min-width: 96px; }
+.ga-picks-cn { font-size: 12px; }
+
+/* 共振：数值 + 5 段方向刻度 */
+.ga-cons { display: flex; align-items: center; gap: 8px; }
+.ga-cons-num { font-weight: 700; font-size: 14px; font-variant-numeric: tabular-nums; }
+.ga-cons-segs { display: inline-flex; gap: 2px; }
+.ga-cons-seg { width: 7px; height: 14px; border-radius: 2px; background: #eef0f3; }
+.ga-cons-seg--up { background: var(--ga-up); }
+.ga-cons-seg--down { background: var(--ga-down); }
+.ga-cons-seg--flat { background: #dfe3e8; }
+
+/* 平均置信：数值 + 细条 */
+.ga-conf { display: flex; flex-direction: column; gap: 3px; min-width: 66px; }
+.ga-conf-track { height: 5px; border-radius: 3px; background: #f0f1f3; overflow: hidden; }
+.ga-conf-track i { display: block; height: 100%; border-radius: 3px; background: var(--ga-accent); }
+
+/* 各周期信号矩阵 */
+.ga-signals { display: inline-flex; gap: 4px; }
+.ga-signal {
+    display: inline-flex; flex-direction: column; align-items: center; gap: 1px;
+    min-width: 42px; padding: 3px 2px; border-radius: 6px;
+    border: 1px solid var(--ga-border); background: #fafbfc; line-height: 1.15;
+}
+.ga-signal-h { font-size: 9px; color: var(--ga-muted); font-style: normal; }
+.ga-signal-d { font-size: 12px; font-weight: 700; font-style: normal; }
+.ga-signal-p { font-size: 9.5px; color: var(--ga-muted); font-style: normal; font-variant-numeric: tabular-nums; }
+.ga-signal--up { background: #fdeceb; border-color: #f3bfbb; }
+.ga-signal--up .ga-signal-d { color: var(--ga-up); }
+.ga-signal--down { background: #e7f5ec; border-color: #b9e2c8; }
+.ga-signal--down .ga-signal-d { color: var(--ga-down); }
+.ga-signal--flat .ga-signal-d { color: var(--ga-muted); }
+
+/* 页脚图例 */
+.ga-picks-legend {
+    display: flex; flex-wrap: wrap; gap: 6px 18px;
+    padding: 9px 14px; border-top: 1px solid var(--ga-border);
+    font-size: 11px; color: var(--ga-muted); line-height: 1.6;
+}
+.ga-picks-legend b { color: var(--ga-text); font-weight: 700; }
+
+/* 空态引导 */
+.ga-picks-empty { padding: 22px 18px; max-width: 660px; }
+.ga-picks-empty-title { font-weight: 700; font-size: 14px; margin-bottom: 6px; }
+.ga-picks-empty-list {
+    margin: 10px 0 14px; padding-left: 20px;
+    font-size: 12.5px; line-height: 1.9; color: var(--ga-text);
+}
+.ga-picks-empty-list b { color: var(--ga-accent); }
+
+/* 共振预设 chip */
+.ga-chip-group { display: inline-flex; gap: 4px; flex-wrap: wrap; }
+.ga-chip {
+    padding: 2px 8px; border-radius: 12px; cursor: pointer;
+    border: 1px solid var(--ga-border); background: #fff;
+    color: var(--ga-muted); font: inherit; font-size: 11.5px; line-height: 1.5;
+}
+.ga-chip:hover { border-color: var(--ga-accent); color: var(--ga-accent); }
+.ga-chip.is-active {
+    background: var(--ga-accent); border-color: var(--ga-accent);
+    color: #fff; font-weight: 600;
+}
+
+/* ---------------------------------------------------------------- 淘汰管理页 */
+.ga-pool-main {
+    display: grid; gap: 12px; align-items: start;
+    grid-template-columns: minmax(0, 2.2fr) minmax(300px, 1fr);
+}
+.ga-pool-table { min-width: 820px; }
+.ga-pool-detail { max-width: 230px; font-size: 11.5px; color: var(--ga-muted); }
+.ga-pool-rate { display: flex; flex-direction: column; gap: 1px; min-width: 70px; }
+.ga-pool-rate small { color: var(--ga-muted); font-size: 10.5px; }
+.ga-pool-selected {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 7px 12px;
+    padding: 10px 12px; margin-bottom: 10px;
+    border: 1px solid var(--ga-border); border-radius: 9px; background: var(--ga-bg);
+    font-size: 12.5px;
+}
+.ga-pool-selected > div { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.ga-pool-selected span { font-size: 10.5px; }
+.ga-pool-selected b { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ga-actions { display: flex; gap: 4px; flex-wrap: wrap; }
+.ga-pool-note {
+    padding: 8px 14px; border-top: 1px solid var(--ga-border);
+    font-size: 11px; color: var(--ga-muted); line-height: 1.6;
+}
+.ga-pool-empty { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 18px 14px; }
+
+/* ---------------------------------------------------------------- 进化监控页 */
+.ga-evo-runs { min-width: 780px; }
+.ga-run-summary {
+    display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px 16px;
+    padding: 10px 12px; border: 1px solid var(--ga-border); border-radius: 9px;
+    background: var(--ga-bg); font-size: 12px;
+}
+.ga-run-summary > div { min-width: 0; }
+.ga-run-summary span { display: block; color: var(--ga-muted); font-size: 10.5px; margin-bottom: 1px; }
+.ga-run-summary b { font-weight: 600; font-variant-numeric: tabular-nums; }
+.ga-evo-body { grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); align-items: start; }
+.ga-evo-hall { max-height: 440px; overflow-y: auto; }
+.ga-evo-fit { display: flex; align-items: center; gap: 6px; min-width: 96px; }
+.ga-evo-fit-track { width: 42px; height: 5px; border-radius: 3px; background: #f0f1f3; overflow: hidden; flex: none; }
+.ga-evo-fit-track i { display: block; height: 100%; border-radius: 3px; background: var(--ga-accent); }
+.ga-gene-meta { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-top: 10px; font-size: 11.5px; color: var(--ga-muted); }
+.ga-gene-meta b { color: var(--ga-text); font-variant-numeric: tabular-nums; }
+.ga-champ-table { min-width: 840px; }
+.ga-champ-members { display: flex; flex-wrap: wrap; gap: 6px; padding: 2px 0 4px 4px; }
+.ga-champ-member {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 2px 8px; border: 1px solid var(--ga-border); border-radius: 12px;
+    background: #fff; font-size: 11px;
+}
+.ga-champ-member b { font-variant-numeric: tabular-nums; }
+
+/* ---------------------------------------------------------------- 加载 / 刷新反馈 */
+
+/* 内联转圈：按钮、全局活动条共用 */
+.ga-spinner {
+    display: inline-block; width: 11px; height: 11px; flex: none;
+    border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%;
+    animation: ga-rotate .7s linear infinite; vertical-align: -1px;
+}
+@keyframes ga-rotate { to { transform: rotate(360deg); } }
+
+/* 按钮加载态：禁用时仍保持可读，不整体变灰到看不清 */
+.ga-btn.is-loading { opacity: .85 !important; cursor: progress; display: inline-flex; align-items: center; gap: 5px; }
+
+/* 刷新按钮旁的一次性反馈文字 */
+.ga-refresh-hint {
+    font-size: 11.5px; color: var(--ga-muted); white-space: nowrap;
+    align-self: center; line-height: 1.2;
+}
+/* 筛选条是 flex-end 对齐（底部对齐按钮），这里补一点下内边距让文字与按钮文字齐平 */
+.ga-filters .ga-refresh-hint { align-self: flex-end; padding-bottom: 9px; }
+.ga-refresh-hint--err { color: var(--ga-up); }
+
+/* 后台刷新：保留旧内容但明显变淡且不可点，避免拿旧数据当新数据。
+   顶部细条与右下角提示负责说明「在等什么」，这里不再叠一个浮层遮挡表头。 */
+.ga-busy { position: relative; }
+.ga-busy.is-refreshing > * {
+    opacity: .5; pointer-events: none; transition: opacity .18s ease;
+}
+
+/* 顶部细进度条 + 右下角耗时提示：任意接口在途超过 400ms 才出现 */
+.ga-activity {
+    position: fixed; top: 0; left: 0; right: 0; height: 2px; z-index: 9000;
+    background: rgba(47, 111, 237, .12); overflow: hidden;
+}
+.ga-activity > i {
+    display: block; height: 100%; width: 38%;
+    background: var(--ga-accent, #2f6fed);
+    animation: ga-activity-slide 1.1s ease-in-out infinite;
+}
+@keyframes ga-activity-slide {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(300%); }
+}
+.ga-activity-toast {
+    position: fixed; right: 18px; bottom: 18px; z-index: 9000;
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 7px 12px; border-radius: 999px; font-size: 12px;
+    background: var(--ga-card, #fff); color: var(--ga-text, #1f2328);
+    border: 1px solid var(--ga-border, #e6e8eb);
+    box-shadow: 0 6px 20px rgba(15, 23, 42, .12);
+    animation: ga-toast-in .18s ease;
+}
+.ga-activity-toast em { font-style: normal; color: var(--ga-muted, #6b7280); font-size: 11.5px; }
+@keyframes ga-toast-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
 /* ---------------------------------------------------------------- 响应式 */
 @media (max-width: 1100px) {
     .ga-schedule-grid { grid-template-columns: 1fr; }
+    .ga-pool-main { grid-template-columns: 1fr; }
+    .ga-evo-body { grid-template-columns: 1fr; }
 }
 @media (max-width: 980px) {
     .ga-grid-2, .ga-grid-3 { grid-template-columns: 1fr; }
@@ -612,8 +798,16 @@
     .ga-head-row { flex-direction: column; gap: 4px; }
     .ga-table { min-width: 720px; }
 }
+@media (max-width: 760px) {
+    .ga-picks-toolbar { gap: 8px; }
+    .ga-picks-toolbar .ga-row { margin-left: 0; width: 100%; }
+    .ga-picks-search { flex: 1; width: auto; min-width: 120px; }
+    .ga-signals { gap: 2px; }
+    .ga-signal { min-width: 36px; }
+}
 @media (max-width: 560px) {
     .ga-kpi-grid { grid-template-columns: 1fr 1fr; }
     .ga-card-body { padding: 10px; }
     .ga-filters { padding: 10px; }
+    .ga-picks-empty { padding: 16px 14px; }
 }

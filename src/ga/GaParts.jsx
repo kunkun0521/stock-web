@@ -1,3 +1,5 @@
+import { useEffect, useRef, useState } from 'react';
+import { subscribeApiPending } from '../hooks/useApi.js';
 import { fmtInt, fmtNum, fmtText } from './gaUtils.js';
 import Term from './GlossaryTerm.jsx';
 
@@ -86,6 +88,9 @@ export function ErrorBox({ message, onRetry, compact = false }) {
  * 把 useApi 的 {data, loading, error, reload} 状态统一渲染：
  * 错误 → ErrorBox；首次加载 → Loading；空数据 → Empty；否则渲染 children(data)。
  * children 可传函数（拿到 data）或直接传节点。
+ *
+ * 已有数据时的再次加载（refreshing）不清空内容，而是把内容降透明度并屏蔽点击，
+ * 让用户明确看到「正在更新」，同时不会误点旧数据。
  */
 export function AsyncPanel({ state, isEmpty, emptyText = '暂无数据', children }) {
     const { data, loading, error, reload } = state || {};
@@ -93,7 +98,12 @@ export function AsyncPanel({ state, isEmpty, emptyText = '暂无数据', childre
     if (loading && data === undefined) return <Loading/>;
     const blank = isEmpty ? isEmpty(data) : (data === undefined || data === null);
     if (blank) return <Empty text={emptyText}/>;
-    return typeof children === 'function' ? children(data) : children;
+    const refreshing = Boolean(loading);
+    return (
+        <div className={`ga-busy${refreshing ? ' is-refreshing' : ''}`} aria-busy={refreshing || undefined}>
+            {typeof children === 'function' ? children(data) : children}
+        </div>
+    );
 }
 
 /* ---------------------------------------------------------------- 筛选条 / 表单 */
@@ -139,12 +149,139 @@ export function TextArea({ value, onChange, placeholder, className = '' }) {
     );
 }
 
-export function Btn({ variant = '', sm = false, className = '', children, ...rest }) {
+/** 旋转指示器：用于按钮内联 loading。 */
+export function Spinner({ className = '' }) {
+    return <i className={`ga-spinner ${className}`} aria-hidden="true"/>;
+}
+
+/**
+ * 按钮。传 loading 时自动禁用并显示转圈 + loadingText，
+ * 让「点了没反应」的等待过程可见（后端慢时尤其重要）。
+ */
+export function Btn({
+    variant = '', sm = false, className = '', loading = false, loadingText,
+    disabled = false, children, ...rest
+}) {
     const v = variant ? `ga-btn--${variant}` : '';
     return (
-        <button type="button" className={`ga-btn ${v}${sm ? ' ga-btn--sm' : ''} ${className}`} {...rest}>
-            {children}
+        <button type="button"
+                className={`ga-btn ${v}${sm ? ' ga-btn--sm' : ''}${loading ? ' is-loading' : ''} ${className}`}
+                disabled={disabled || loading}
+                aria-busy={loading || undefined}
+                {...rest}>
+            {loading ? <><Spinner/>{loadingText || children}</> : children}
         </button>
+    );
+}
+
+/**
+ * 刷新按钮：把一组 useApi 状态的加载过程串成一条可见反馈。
+ *
+ *  - 点击后立即转圈并禁用，超过 1 秒显示已等待秒数（后端慢时能确认请求还活着）；
+ *  - 全部结束后显示「已更新 HH:MM:SS」，失败则显示红色「刷新失败」；
+ *  - 任何一路还在加载时按钮保持禁用，避免重复点击叠加请求。
+ *
+ * @param state  单个 useApi 返回值
+ * @param states 多个 useApi 返回值（任一在加载都算忙）
+ */
+export function RefreshBtn({
+    state, states, label = '刷新', onClick, variant = 'primary', sm = false, className = '',
+}) {
+    const list = (states || (state ? [state] : [])).filter(Boolean);
+    const [waiting, setWaiting] = useState(false);
+    const [doneAt, setDoneAt] = useState(0);
+    const [seconds, setSeconds] = useState(0);
+
+    const busy = waiting || list.some((s) => s.loading);
+    const failed = list.some((s) => s.error);
+    const updatedAt = Math.max(doneAt, 0, ...list.map((s) => s.updatedAt || 0));
+
+    // 等待计时：只有超过 1 秒才显示，避免正常速度下数字闪一下就消失。
+    useEffect(() => {
+        if (!busy) {
+            setSeconds(0);
+            return undefined;
+        }
+        const start = Date.now();
+        const t = setInterval(() => setSeconds(Math.floor((Date.now() - start) / 1000)), 500);
+        return () => clearInterval(t);
+    }, [busy]);
+
+    const handle = async () => {
+        if (busy) return;
+        setWaiting(true);
+        try {
+            if (onClick) await onClick();
+            await Promise.all(list.map((s) => (s.reload ? s.reload() : Promise.resolve())));
+            setDoneAt(Date.now());
+        } catch (e) {
+            // 请求错误已由 useApi 写入 state.error，AsyncPanel 会渲染 ErrorBox，
+            // 这里只需吞掉异常，避免事件处理器抛出未处理的 Promise rejection。
+        } finally {
+            setWaiting(false);
+        }
+    };
+
+    const hint = failed
+        ? <span className="ga-refresh-hint ga-refresh-hint--err">上次刷新失败</span>
+        : updatedAt
+            ? <span className="ga-refresh-hint">已更新 {new Date(updatedAt).toLocaleTimeString('zh-CN')}</span>
+            : null;
+
+    return (
+        <>
+            <Btn variant={variant} sm={sm} className={className} loading={busy}
+                 loadingText={seconds >= 1 ? `刷新中 ${seconds}s` : '刷新中…'}
+                 onClick={handle}>{label}</Btn>
+            {busy ? (
+                <span className="ga-refresh-hint" title="正在向后端请求最新数据">
+                    {seconds >= 5 ? '后端响应较慢，请稍候…' : '请求中'}
+                </span>
+            ) : hint}
+        </>
+    );
+}
+
+/**
+ * 全局请求活动指示：任意接口在途超过 400ms 时，
+ * 顶部出现细进度条 + 右下角耗时提示。
+ * 这样即使某个操作按钮自身没有加载态，用户也知道请求发出去了。
+ */
+export function ApiActivityBar() {
+    const [count, setCount] = useState(0);
+    const [since, setSince] = useState(0);
+    const [now, setNow] = useState(() => Date.now());
+    const lastCount = useRef(0);
+
+    useEffect(() => subscribeApiPending((n) => {
+        const prev = lastCount.current;
+        lastCount.current = n;
+        setCount(n);
+        if (n > 0 && prev === 0) setSince(Date.now());
+        if (n === 0 && prev > 0) setSince(0);
+    }), []);
+
+    useEffect(() => {
+        if (!count) return undefined;
+        const t = setInterval(() => setNow(Date.now()), 500);
+        return () => clearInterval(t);
+    }, [count]);
+
+    const elapsed = since ? now - since : 0;
+    if (!count || elapsed < 400) return null;
+    const sec = Math.floor(elapsed / 1000);
+
+    return (
+        <>
+            <div className="ga-activity" role="progressbar" aria-label="正在加载数据">
+                <i/>
+            </div>
+            <div className="ga-activity-toast" role="status" aria-live="polite">
+                <Spinner/>
+                <span>正在加载数据{sec >= 1 ? ` · 已等待 ${sec}s` : '…'}</span>
+                {sec >= 8 ? <em>后端响应较慢，请不要重复点击</em> : null}
+            </div>
+        </>
     );
 }
 

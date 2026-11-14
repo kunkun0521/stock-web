@@ -11,7 +11,7 @@ import {
 import GaChart from './GaChart.jsx';
 import Term from './GlossaryTerm.jsx';
 import {
-    FilterBar, Field, Select, Input, Btn, GaTabs, AsyncPanel, Badge,
+    FilterBar, Field, Select, Input, RefreshBtn, GaTabs, AsyncPanel, Badge,
 } from './GaParts.jsx';
 
 const TABS = [
@@ -251,7 +251,7 @@ export default function AnalysisPage() {
                 <Field label="周期"><Select value={f.horizon} onChange={set('horizon')} options={HORIZON_OPTIONS}/></Field>
                 <Field label="起始日期"><Input type="date" value={f.from} onChange={set('from')}/></Field>
                 <Field label="结束日期"><Input type="date" value={f.to} onChange={set('to')}/></Field>
-                <Btn variant="primary" onClick={main.reload}>刷新</Btn>
+                <RefreshBtn state={main}/>
             </FilterBar>
 
             <div className="ga-card">

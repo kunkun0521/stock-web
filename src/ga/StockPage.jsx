@@ -11,7 +11,7 @@ import { buildKlineOption, markSummary, isVerified } from './kline.js';
 import GaChart from './GaChart.jsx';
 import Term from './GlossaryTerm.jsx';
 import {
-    Card, FilterBar, Field, Select, Input, Btn, AsyncPanel, Empty, Badge, MiniBar, Timeline,
+    Card, FilterBar, Field, Select, Input, Btn, AsyncPanel, Empty, Badge, MiniBar, Timeline, RefreshBtn,
 } from './GaParts.jsx';
 
 const DEFAULT_VIEW = {
@@ -123,7 +123,7 @@ export default function StockPage() {
                         <Btn onClick={() => applyRange(0)}>全部</Btn>
                     </div>
                 </div>
-                <Btn variant="primary" onClick={main.reload}>刷新</Btn>
+                <RefreshBtn state={main}/>
             </FilterBar>
 
             <AsyncPanel state={main} isEmpty={() => false}>

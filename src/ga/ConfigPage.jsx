@@ -5,7 +5,7 @@ import { getConfig, putConfig } from './api.js';
 import { asArray, asObject, fmtText } from './gaUtils.js';
 import Term from './GlossaryTerm.jsx';
 import {
-    Card, FilterBar, Field, Input, Select, Btn, AsyncPanel, Badge,
+    Card, FilterBar, Field, Input, Select, Btn, AsyncPanel, Badge, RefreshBtn,
 } from './GaParts.jsx';
 
 /**
@@ -63,7 +63,7 @@ export default function ConfigPage() {
 
     const saveOne = async (row) => {
         const key = editKey(row);
-        setBusy(key);
+        setBusy(`save:${key}`);
         setMsg(null);
         try {
             await putConfig({
@@ -117,7 +117,7 @@ export default function ConfigPage() {
             return;
         }
         const key = editKey(row);
-        setBusy(key);
+        setBusy(`restore:${key}`);
         try {
             await putConfig({
                 scope: fmtText(row.scope) || (scope === 'ALL' ? 'GLOBAL' : scope),
@@ -145,8 +145,10 @@ export default function ConfigPage() {
                     <Input className="ga-input--wide" value={keyword} onChange={setKeyword}
                            placeholder="如 pop_size、淘汰、噪声"/>
                 </Field>
-                <Btn onClick={() => cfg.reload()}>刷新</Btn>
-                <Btn variant="primary" disabled={!dirtyRows.length || busy !== ''}
+                <RefreshBtn state={cfg}/>
+                <Btn variant="primary" disabled={!dirtyRows.length}
+                     loading={busy === 'all'}
+                     loadingText={`保存中… (${dirtyRows.length})`}
                      onClick={saveAll}>保存全部改动{dirtyRows.length ? ` (${dirtyRows.length})` : ''}</Btn>
                 <Btn disabled={!dirtyRows.length || busy !== ''} onClick={() => setEdits({})}>撤销修改</Btn>
                 <span className="ga-muted">
@@ -192,9 +194,13 @@ export default function ConfigPage() {
                                             <td>
                                                 <div className="ga-row ga-nowrap">
                                                     <Btn sm variant={dirty ? 'primary' : ''}
-                                                         disabled={busy === key || busy === 'all'}
+                                                         disabled={busy !== ''}
+                                                         loading={busy === `save:${key}`}
+                                                         loadingText="保存中…"
                                                          onClick={() => saveOne(row)}>保存</Btn>
-                                                    <Btn sm disabled={def === undefined || busy === key || busy === 'all'}
+                                                    <Btn sm disabled={def === undefined || busy !== ''}
+                                                         loading={busy === `restore:${key}`}
+                                                         loadingText="恢复中…"
                                                          title="按代码内置默认值写回"
                                                          onClick={() => restoreDefault(row)}>恢复默认</Btn>
                                                     {dirty ? (

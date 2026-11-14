@@ -91,6 +91,7 @@ export default function JobsPage() {
     const [busy, setBusy] = useState('');
     const [notice, setNotice] = useState(null);
     const [pending, setPending] = useState(null);
+    const [manualBusy, setManualBusy] = useState(false);
 
     const pendingRef = useRef(null);
     const inflightRef = useRef(false);
@@ -256,7 +257,11 @@ export default function JobsPage() {
                     <Select value={limit} onChange={setLimit}
                             options={['20', '40', '100'].map((v) => ({ value: v, label: `${v} 条` }))}/>
                 </Field>
-                <Btn variant="primary" onClick={refresh}>立即刷新</Btn>
+                <Btn variant="primary" loading={manualBusy} loadingText="刷新中…"
+                     onClick={async () => {
+                         setManualBusy(true);
+                         try { await refresh(); } finally { setManualBusy(false); }
+                     }}>立即刷新</Btn>
                 {scheduleUnsupported || logUnsupported
                     ? <Btn onClick={redetect} title="后端重启后点此重新检测新增接口">重新检测</Btn>
                     : null}
@@ -293,9 +298,9 @@ export default function JobsPage() {
                             下面的「立即执行」走通用任务接口，无需重启即可生效。
                         </div>
                         <div className="ga-row">
-                            <Btn variant="primary" disabled={busy === 'run:DailyPipeline'}
+                            <Btn variant="primary" loading={busy === 'run:DailyPipeline'} loadingText="提交中…"
                                  onClick={() => trigger('DailyPipeline')}>立即执行日链路</Btn>
-                            <Btn disabled={busy === 'run:WeeklyEvolve'}
+                            <Btn loading={busy === 'run:WeeklyEvolve'} loadingText="提交中…"
                                  onClick={() => trigger('WeeklyEvolve')}>立即执行周进化</Btn>
                         </div>
                         <div className="ga-muted">
@@ -331,12 +336,16 @@ export default function JobsPage() {
                             </div>
                         </div>
                         <div className="ga-row">
-                            <Btn variant="primary" disabled={busy === 'fire:daily' || pending?.job === 'DailyPipeline'}
+                            <Btn variant="primary"
+                                 disabled={pending?.job === 'DailyPipeline'}
+                                 loading={busy === 'fire:daily'} loadingText="提交中…"
                                  onClick={() => trigger('DailyPipeline', 'daily')}>按定时规则执行日链路</Btn>
-                            <Btn disabled={busy === 'fire:weekly' || pending?.job === 'WeeklyEvolve'}
+                            <Btn disabled={pending?.job === 'WeeklyEvolve'}
+                                 loading={busy === 'fire:weekly'} loadingText="提交中…"
                                  onClick={() => trigger('WeeklyEvolve', 'weekly')}>按定时规则执行周进化</Btn>
                             <Btn variant={sc.runtimeEnabled ? '' : 'primary'}
-                                 disabled={busy === 'toggle' || sc.configEnabled === false}
+                                 disabled={sc.configEnabled === false}
+                                 loading={busy === 'toggle'} loadingText="切换中…"
                                  onClick={toggleSchedule}>
                                 {sc.runtimeEnabled ? '停用定时触发' : '启用定时触发'}
                             </Btn>
@@ -394,7 +403,9 @@ export default function JobsPage() {
                                                 : shortMessage(r.lastMessage, 100)}
                                         </td>
                                         <td>
-                                            <Btn sm variant="primary" disabled={running || isPending || busy.startsWith('run:')}
+                                            <Btn sm variant="primary"
+                                                 disabled={running || isPending || busy.startsWith('run:')}
+                                                 loading={busy === `run:${name}`} loadingText="提交中…"
                                                  onClick={() => trigger(name)}>立即运行</Btn>
                                         </td>
                                     </tr>

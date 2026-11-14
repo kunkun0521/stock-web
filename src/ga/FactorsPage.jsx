@@ -6,7 +6,7 @@ import {
 } from './gaUtils.js';
 import GaChart from './GaChart.jsx';
 import Term from './GlossaryTerm.jsx';
-import { Card, FilterBar, Field, Input, Btn, AsyncPanel, Empty } from './GaParts.jsx';
+import { Card, FilterBar, Field, Input, AsyncPanel, Empty, RefreshBtn } from './GaParts.jsx';
 
 const DEFAULT_FILTERS = { days: '60' };
 const SPLIT_LINE = { lineStyle: { color: '#f0f1f3' } };
@@ -84,7 +84,7 @@ export default function FactorsPage() {
             <FilterBar>
                 <Field label="统计天数" hint="交易日前推窗口"><Input type="number" min="1" value={f.days}
                                                        onChange={(v) => setF((p) => ({ ...p, days: v }))}/></Field>
-                <Btn variant="primary" onClick={matrix.reload}>刷新</Btn>
+                <RefreshBtn state={matrix}/>
             </FilterBar>
 
             <AsyncPanel state={matrix} isEmpty={() => features.length === 0} emptyText="暂无因子 IC 数据">

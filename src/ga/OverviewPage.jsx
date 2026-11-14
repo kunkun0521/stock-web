@@ -10,7 +10,7 @@ import {
 import GaChart from './GaChart.jsx';
 import Term from './GlossaryTerm.jsx';
 import {
-    Card, KpiGrid, KpiCard, FilterBar, Field, Select, Input, Btn, AsyncPanel, Empty,
+    Card, KpiGrid, KpiCard, FilterBar, Field, Select, Input, AsyncPanel, Empty, RefreshBtn,
 } from './GaParts.jsx';
 
 const PALETTE = [ACCENT, UP, DOWN, '#e8a33d', '#9b59b6', '#3f8cff'];
@@ -165,7 +165,7 @@ export default function OverviewPage() {
                 <Field label={<span>口径 <Term id="strict"/></span>}><Select value={f.strict} onChange={set('strict')} options={STRICT_OPTIONS}/></Field>
                 <Field label={<span>回放 <Term id="isReplay"/></span>}><Select value={f.includeReplay} onChange={set('includeReplay')} options={REPLAY_OPTIONS}/></Field>
                 <Field label="滚动窗口" hint="交易日"><Input type="number" min="1" value={f.window} onChange={set('window')}/></Field>
-                <Btn variant="primary" onClick={() => { main.reload(); cal.reload(); }}>刷新</Btn>
+                <RefreshBtn states={[main, cal]}/>
             </FilterBar>
 
             <AsyncPanel state={main} isEmpty={() => false}>
