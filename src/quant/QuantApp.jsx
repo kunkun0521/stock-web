@@ -193,7 +193,15 @@ export default function QuantApp() {
                 />
             ) : null}
 
-            {tab === 'result' ? <ResultPanel taskId={taskId} onOpenTask={setTaskId}/> : null}
+            {/* 任务状态由本组件统一轮询，这里把最新状态透传下去：
+                结果页不再自己拉一次就冻结，运行结束后会自动重载指标/净值/交易/事件。 */}
+            {tab === 'result' ? (
+                <ResultPanel
+                    taskId={taskId}
+                    liveTask={task && task.id === taskId ? task : null}
+                    onOpenTask={setTaskId}
+                />
+            ) : null}
 
             {tab === 'signals' ? (
                 <SignalsPanel

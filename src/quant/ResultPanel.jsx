@@ -82,11 +82,13 @@ function monthlyCell(v) {
     return { bg, text: `${(n * 100).toFixed(1)}%` };
 }
 
-export default function ResultPanel({ taskId, onOpenTask }) {
+export default function ResultPanel({ taskId, liveTask, onOpenTask }) {
     const [split, setSplit] = useState('ALL');
     const [page, setPage] = useState(1);
     const [size, setSize] = useState(20);
     const [horizon, setHorizon] = useState(5);
+    const [elapsed, setElapsed] = useState(0);
+    const [reloading, setReloading] = useState(false);
 
     const task = useApi(() => (taskId ? getBacktest(taskId) : Promise.resolve(null)), [taskId]);
     const metrics = useApi(
@@ -105,11 +107,45 @@ export default function ResultPanel({ taskId, onOpenTask }) {
 
     useEffect(() => { setPage(1); }, [taskId]);
 
-    const data = task.data || {};
+    // 任务状态以 QuantApp 的轮询结果为准（liveTask）：结果页自己只在挂载时拉一次，
+    // 提交后立刻切过来只能拿到 PENDING，不接这份实时状态就会永远停在「运行中」。
+    const data = (liveTask && liveTask.id === taskId ? liveTask : task.data) || {};
+    const status = data.status || '';
+    const running = status === 'RUNNING' || status === 'PENDING';
+
     const eq = Array.isArray(equity.data) ? equity.data : [];
     const m = metrics.data || {};
     const tradePage = trades.data || {};
     const eventRows = Array.isArray(events.data) ? events.data : [];
+
+    // 任务刚结束（SUCCESS / FAILED / CANCELED）时把结果集全部重拉一次；
+    // 从历史里打开终态任务也会触发一次，多一轮请求但保证指标与图表不过期。
+    const finishKey = status && !running ? `${taskId}:${status}:${data.durationMs ?? ''}` : '';
+    useEffect(() => {
+        if (!finishKey) return;
+        metricsAll.reload();
+        metrics.reload();
+        metricsIs.reload();
+        metricsOos.reload();
+        equity.reload();
+        trades.reload();
+        events.reload();
+    }, [finishKey]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // 运行中显示已等待秒数：后端慢或排队时，用户能确认任务在推进而不是卡死
+    useEffect(() => {
+        if (!running) {
+            setElapsed(0);
+            return undefined;
+        }
+        const started = data.startedAt
+            ? new Date(String(data.startedAt).replace(' ', 'T')).getTime() : NaN;
+        const t0 = Number.isFinite(started) ? started : Date.now();
+        const update = () => setElapsed(Math.max(0, Math.round((Date.now() - t0) / 1000)));
+        update();
+        const timer = setInterval(update, 1000);
+        return () => clearInterval(timer);
+    }, [running, taskId, data.startedAt]);
 
     const horizons = useMemo(() => (
         [...new Set(eventRows.map((r) => r.horizon))].sort((a, b) => a - b)
@@ -130,7 +166,17 @@ export default function ResultPanel({ taskId, onOpenTask }) {
         return <QEmpty text="先在上方选择或运行一次回测"/>;
     }
 
-    const running = data.status === 'RUNNING' || data.status === 'PENDING';
+    const reloadAll = async () => {
+        setReloading(true);
+        try {
+            await Promise.all([
+                task.reload(), metrics.reload(), metricsAll.reload(), metricsIs.reload(),
+                metricsOos.reload(), equity.reload(), trades.reload(), events.reload(),
+            ]);
+        } finally {
+            setReloading(false);
+        }
+    };
 
     return (
         <div className="quant-stack">
@@ -141,13 +187,17 @@ export default function ResultPanel({ taskId, onOpenTask }) {
                        </QBadge>
                        <span className="ga-muted">{data.startDate} ~ {data.endDate}</span>
                        {data.dataSnapshot ? <span className="ga-muted">快照 {data.dataSnapshot}</span> : null}
+                       <QBtn sm loading={reloading} loadingText="刷新中…" onClick={reloadAll}>刷新结果</QBtn>
                    </div>}>
                 {running ? (
                     <div className="quant-progress">
                         <div className="quant-progress-track">
                             <i style={{ width: `${Math.max(2, data.progress || 0)}%` }}/>
                         </div>
-                        <span>{data.progress || 0}% · {data.stage || '运行中'}</span>
+                        <span>
+                            {data.progress || 0}% · {data.stage || '运行中'}
+                            {elapsed > 0 ? ` · 已等待 ${elapsed}s` : ''}
+                        </span>
                     </div>
                 ) : null}
                 {data.errorMsg ? <div className="ga-note ga-note--err">{data.errorMsg}</div> : null}
@@ -322,6 +372,15 @@ export default function ResultPanel({ taskId, onOpenTask }) {
                         </QAsync>
                     </QCard>
                 </>
+            ) : null}
+
+            {running ? (
+                <QCard title="正在计算">
+                    <div className="ga-note">
+                        回测与事件研究在同一次任务里完成，正常几秒内结束；结束后本页会自动加载指标、净值与明细，
+                        不需要手动刷新。若进度长时间不动，可到「任务历史」确认状态，或点右上角「刷新结果」重试。
+                    </div>
+                </QCard>
             ) : null}
 
             {data.status === 'FAILED' || data.status === 'CANCELED' ? (
