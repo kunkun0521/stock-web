@@ -24,6 +24,7 @@ const NAV_ITEMS = [
     { to: '/data-crawler', label: '数据抓取', icon: 'M12 3v12 M7 10l5 5 5-5 M4 20h16' },
     { to: '/ga', label: '遗传算法预测', icon: 'M4 6h4 M4 12h7 M4 18h10 M15 5l5 5-5 5 M15 15l5 5-5 5' },
     { to: '/quant', label: '策略回测', icon: 'M4 20V10 M10 20V4 M16 20v-7 M22 20H2' },
+    { to: '/prob', label: '概率预测', icon: 'M3 17c4-8 7 4 10-3s5 2 8-6 M3 21h18 M7 3v4 M17 3v4' },
 ];
 
 /** 顶栏右侧的股票搜索（联想逻辑沿用原顶部导航） */

@@ -1,0 +1,224 @@
+/*
+ * 股票概率预测引擎页面样式。
+ * 复用 ga.css 的 CSS 变量与 .ga-* 基础组件，本文件只补概率模块特有的布局。
+ * 颜色遵循 A 股习惯：涨/高风险用红（--ga-up），跌/低风险用绿（--ga-down）。
+ */
+
+.prob-root { --prob-accent: var(--ga-accent, #2f6fed); }
+
+/* ---------------------------------------------------------------- 头部 */
+.prob-sub { color: var(--ga-muted, #6b7280); font-size: 12.5px; }
+.prob-head-actions { margin-left: auto; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.prob-disclaimer {
+    margin-top: 8px; padding: 7px 10px; border-radius: 7px;
+    background: #fff7e8; border: 1px solid #f3dfae; color: #8a5a00;
+    font-size: 12px; line-height: 1.6;
+}
+.prob-activity {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 11.5px; color: var(--ga-muted, #6b7280);
+    padding: 5px 2px 7px; min-height: 24px;
+}
+.prob-activity.is-on { color: var(--prob-accent); font-weight: 600; }
+
+/* ---------------------------------------------------------------- 通用块 */
+.prob-muted { color: var(--ga-muted, #6b7280); font-size: 12px; }
+.prob-small { font-size: 11.5px; color: var(--ga-muted, #6b7280); line-height: 1.5; }
+.prob-note { margin: 10px 0 0; font-size: 12px; color: var(--ga-muted, #6b7280); line-height: 1.75; }
+.prob-onboard {
+    margin-top: 12px; padding: 12px 14px; border-radius: 8px;
+    background: #f2f6ff; border: 1px solid #cfdcff; color: #2c4a86;
+    font-size: 12.5px; line-height: 1.9; display: flex; gap: 12px; align-items: center; flex-wrap: wrap;
+}
+.prob-notice {
+    margin-top: 10px; padding: 8px 12px; border-radius: 7px;
+    background: #eaf1ff; border: 1px solid #c9dcff; color: #2c4a86; font-size: 12.5px;
+}
+.prob-grade-note {
+    margin-top: 12px; padding: 10px 12px; border-radius: 8px;
+    font-size: 12.5px; line-height: 1.8;
+}
+.prob-grade-note.is-ok { background: #e7f5ec; border: 1px solid #b9e2c8; color: #146c3a; }
+.prob-grade-note.is-warn { background: #fff7e8; border: 1px solid #f3dfae; color: #8a5a00; }
+.prob-grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap: 12px; }
+.prob-mini-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; margin-top: 10px; }
+.prob-scroll-260, .prob-scroll-300, .prob-scroll-360, .prob-scroll-420 { overflow-y: auto; }
+.prob-scroll-260 { max-height: 260px; }
+.prob-scroll-300 { max-height: 300px; }
+.prob-scroll-360 { max-height: 360px; }
+.prob-scroll-420 { max-height: 420px; }
+.prob-subhead { margin: 14px 0 8px; font-size: 12.5px; font-weight: 700; }
+.prob-check { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; white-space: nowrap; }
+
+/* ---------------------------------------------------------------- 筛选与表格 */
+.prob-legend { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin: 10px 0; font-size: 12px; }
+.prob-legend-sep { margin-left: 12px; }
+.prob-table { min-width: 900px; }
+.prob-table tbody tr { cursor: default; }
+.prob-table tbody tr.is-active { background: #f2f6ff; }
+.prob-table tbody tr:hover { background: #fafbfc; }
+.prob-code {
+    border: none; background: transparent; color: var(--prob-accent);
+    font-weight: 700; font-size: 13px; cursor: pointer; padding: 0;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+.prob-code:hover { text-decoration: underline; }
+.prob-market { margin-left: 5px; color: var(--ga-muted, #6b7280); font-size: 10.5px; }
+.prob-flags { display: block; color: #8a5a00; font-size: 10.5px; }
+.prob-pup { min-width: 88px; }
+.prob-pup-bar { height: 4px; border-radius: 3px; background: #eceff3; margin-top: 3px; overflow: hidden; }
+.prob-pup-bar i { display: block; height: 100%; background: currentColor; border-radius: 3px; }
+.prob-interval { position: relative; width: 150px; height: 14px; background: #f0f2f5; border-radius: 3px; }
+.prob-interval-zero { position: absolute; left: 50%; top: 0; bottom: 0; width: 1px; background: #b6bcc6; }
+.prob-interval-band { position: absolute; top: 3px; height: 8px; border-radius: 2px; background: rgba(47,111,237,.28); }
+.prob-interval-mid { position: absolute; top: 1px; height: 12px; width: 2px; background: #d8392b; }
+.prob-pager { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 10px; font-size: 12px; flex-wrap: wrap; }
+.prob-pager-btns { display: flex; align-items: center; gap: 6px; }
+.prob-pager .ga-select { width: auto; min-width: 92px; }
+.prob-backbar {
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+    position: sticky; top: 58px; z-index: 6;
+    background: var(--ga-card, #fff); border: 1px solid var(--ga-border, #e6e8eb);
+    border-radius: 9px; padding: 8px 12px;
+}
+.prob-backbar-actions { margin-left: auto; display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.prob-backbar-actions .ga-input { width: 110px; }
+
+/* ---------------------------------------------------------------- 条形 / 矩阵 */
+.prob-bar-list { display: flex; flex-direction: column; gap: 7px; }
+.prob-bar-row { display: grid; grid-template-columns: 116px 1fr 62px; gap: 8px; align-items: center; font-size: 12px; }
+.prob-bar-label { color: var(--ga-muted, #6b7280); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.prob-bar-track { height: 10px; border-radius: 3px; background: #f0f2f5; overflow: hidden; position: relative; }
+.prob-bar-fill { display: block; height: 100%; border-radius: 3px; }
+.prob-bar-fill.is-up { background: var(--ga-up, #d8392b); }
+.prob-bar-fill.is-down { background: var(--ga-down, #17924e); }
+.prob-bar-row b { text-align: right; font-variant-numeric: tabular-nums; }
+.prob-matrix { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.prob-matrix th, .prob-matrix td { padding: 8px 10px; text-align: center; border: 1px solid var(--ga-border, #e6e8eb); }
+.prob-matrix thead th { background: #fafbfc; color: var(--ga-muted, #6b7280); }
+.prob-matrix tbody th { background: #fafbfc; }
+.prob-matrix td { color: #12305f; font-weight: 700; }
+
+/* ---------------------------------------------------------------- 任务与配置 */
+.prob-launch { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
+.prob-launch > div { flex: 1; min-width: 280px; }
+.prob-launch h3 { margin: 0 0 6px; font-size: 14px; }
+.prob-launch p { margin: 4px 0; font-size: 12.5px; line-height: 1.8; }
+.prob-task-buttons { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 12px; }
+.prob-run-live { margin-top: 12px; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--ga-border, #e6e8eb); background: #fafbfc; }
+.prob-run-live-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 12.5px; }
+.prob-run-live-head .ga-btn { margin-left: auto; }
+.prob-run-msg { margin-top: 8px; font-size: 11.5px; color: var(--ga-muted, #6b7280); white-space: pre-wrap; word-break: break-all; }
+.prob-config-search { margin-bottom: 10px; }
+.prob-config-groups { display: flex; flex-direction: column; gap: 8px; }
+.prob-config-groups details { border: 1px solid var(--ga-border, #e6e8eb); border-radius: 8px; background: var(--ga-card, #fff); }
+.prob-config-groups summary { cursor: pointer; padding: 9px 12px; font-weight: 600; font-size: 12.5px; }
+.prob-config-groups details > div { padding: 0 12px 10px; }
+.prob-config-value { font-size: 11.5px; word-break: break-all; }
+.prob-config-value pre { margin: 0; white-space: pre-wrap; font-size: 11px; line-height: 1.6; }
+
+/* ---------------------------------------------------------------- 就地公式入口 */
+.prob-formula-term {
+    display: inline; border: none; background: transparent; padding: 0;
+    color: inherit; font: inherit; cursor: pointer; border-bottom: 1px dashed currentColor;
+}
+.prob-formula-term:hover { color: var(--prob-accent); }
+.prob-formula-q, .prob-formula-demo {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 13px; height: 13px; margin-left: 2px; border-radius: 50%;
+    background: var(--prob-accent); color: #fff; font-size: 9px; font-weight: 700;
+    vertical-align: super; line-height: 1;
+}
+
+/* ---------------------------------------------------------------- 公式弹窗 */
+.prob-modal-mask {
+    position: fixed; inset: 0; z-index: 1000; display: flex; align-items: center; justify-content: center;
+    background: rgba(20, 26, 38, .55); padding: 24px;
+}
+.prob-modal {
+    width: min(1180px, 96vw); height: min(86vh, 820px);
+    display: flex; flex-direction: column;
+    background: var(--ga-card, #fff); color: var(--ga-text, #1f2328);
+    border-radius: 12px; box-shadow: 0 18px 60px rgba(0,0,0,.28); overflow: hidden;
+}
+.prob-modal-head {
+    display: flex; align-items: flex-start; gap: 16px; padding: 16px 20px 12px;
+    border-bottom: 1px solid var(--ga-border, #e6e8eb);
+}
+.prob-modal-head h2 { margin: 0 0 4px; font-size: 17px; }
+.prob-modal-head p { margin: 0; font-size: 12px; color: var(--ga-muted, #6b7280); }
+.prob-modal-close {
+    margin-left: auto; flex: none; border: 1px solid var(--ga-border, #e6e8eb);
+    background: transparent; color: var(--ga-muted, #6b7280); border-radius: 6px;
+    width: 28px; height: 28px; cursor: pointer; font-size: 14px;
+}
+.prob-modal-close:hover { color: var(--prob-accent); border-color: var(--prob-accent); }
+.prob-formula-toolbar {
+    padding: 10px 20px; border-bottom: 1px solid var(--ga-border, #e6e8eb);
+    display: flex; flex-direction: column; gap: 8px;
+}
+.prob-formula-groups { display: flex; gap: 5px; flex-wrap: wrap; }
+.prob-chip {
+    border: 1px solid var(--ga-border, #e6e8eb); background: #fafbfc;
+    color: var(--ga-muted, #6b7280); border-radius: 14px; padding: 3px 10px;
+    font-size: 11.5px; cursor: pointer; white-space: nowrap;
+}
+.prob-chip:hover { border-color: var(--prob-accent); }
+.prob-chip.active { background: var(--prob-accent); border-color: var(--prob-accent); color: #fff; font-weight: 600; }
+.prob-formula-count { font-size: 11.5px; color: var(--ga-muted, #6b7280); }
+.prob-modal-body { flex: 1; overflow: hidden; }
+.prob-formula-body { display: grid; grid-template-columns: 300px 1fr; }
+.prob-formula-list { overflow-y: auto; border-right: 1px solid var(--ga-border, #e6e8eb); padding: 10px; background: #fafbfc; }
+.prob-formula-item {
+    display: flex; flex-direction: column; gap: 2px; width: 100%; text-align: left;
+    padding: 8px 10px; margin-bottom: 5px; border: 1px solid transparent; border-radius: 7px;
+    background: transparent; cursor: pointer; color: var(--ga-text, #1f2328);
+}
+.prob-formula-item:hover { background: #f0f4ff; }
+.prob-formula-item.active { background: #fff; border-color: var(--prob-accent); box-shadow: 0 1px 4px rgba(47,111,237,.12); }
+.prob-formula-item code { font-size: 11.5px; color: var(--prob-accent); word-break: break-all; }
+.prob-formula-item b { font-size: 12.5px; }
+.prob-formula-item span { font-size: 10.5px; color: var(--ga-muted, #6b7280); }
+.prob-formula-panel { overflow-y: auto; padding: 18px 22px 30px; }
+.prob-formula-blank { padding: 40px 20px; color: var(--ga-muted, #6b7280); font-size: 13px; }
+.prob-formula-detail-head { display: flex; align-items: center; gap: 10px; }
+.prob-formula-group-tag { background: #eaf1ff; color: #2c4a86; border-radius: 4px; padding: 2px 8px; font-size: 11px; }
+.prob-formula-doc { font-size: 11.5px; color: var(--ga-muted, #6b7280); }
+.prob-formula-detail h3 { margin: 10px 0 6px; font-size: 17px; }
+.prob-formula-term-big { display: block; font-size: 14px; color: var(--prob-accent); word-break: break-all; }
+.prob-formula-expr {
+    margin: 10px 0; padding: 12px 14px; border-radius: 8px; background: #f5f7fa;
+    border-left: 3px solid var(--prob-accent); font-size: 13px; line-height: 1.9;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace; word-break: break-all;
+}
+.prob-formula-meaning { font-size: 12.5px; line-height: 1.85; margin: 0 0 14px; }
+.prob-formula-section { margin-top: 16px; }
+.prob-formula-section h4 { margin: 0 0 8px; font-size: 13px; }
+.prob-formula-section p { margin: 0; font-size: 12.5px; line-height: 1.85; }
+.prob-formula-param-wrap { overflow-x: auto; }
+.prob-formula-param-table { width: 100%; border-collapse: collapse; font-size: 12px; min-width: 620px; }
+.prob-formula-param-table th, .prob-formula-param-table td {
+    border: 1px solid var(--ga-border, #e6e8eb); padding: 8px 10px; text-align: left; vertical-align: top; line-height: 1.7;
+}
+.prob-formula-param-table th { background: #fafbfc; color: var(--ga-muted, #6b7280); }
+.prob-formula-param-table td:first-child { width: 20%; }
+.prob-formula-param-table td:nth-child(2) { width: 34%; }
+.prob-formula-flow { display: flex; flex-direction: column; gap: 6px; font-size: 12.5px; }
+.prob-formula-flow div { display: flex; gap: 10px; }
+.prob-formula-flow span { flex: none; width: 70px; color: var(--ga-muted, #6b7280); }
+.prob-formula-example { padding: 10px 12px; border-radius: 7px; background: #e7f5ec; color: #146c3a; font-size: 12.5px; line-height: 1.8; }
+.prob-formula-caution { margin-top: 14px; padding: 9px 12px; border-radius: 7px; background: #fff7e8; color: #8a5a00; font-size: 12.5px; line-height: 1.8; }
+.prob-modal-foot {
+    display: flex; align-items: center; gap: 12px; padding: 10px 20px;
+    border-top: 1px solid var(--ga-border, #e6e8eb); font-size: 11.5px; color: var(--ga-muted, #6b7280);
+}
+.prob-modal-foot .ga-btn { margin-left: auto; flex: none; }
+
+/* ---------------------------------------------------------------- 响应式 */
+@media (max-width: 900px) {
+    .prob-grid-2 { grid-template-columns: 1fr; }
+    .prob-formula-body { grid-template-columns: 1fr; }
+    .prob-formula-list { max-height: 180px; border-right: none; border-bottom: 1px solid var(--ga-border, #e6e8eb); }
+    .prob-modal { height: 94vh; }
+    .prob-head-actions { width: 100%; margin-left: 0; }
+}
