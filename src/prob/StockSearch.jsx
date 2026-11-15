@@ -14,6 +14,29 @@ import { useEffect, useRef, useState } from 'react';
 import { stockApi } from '../api/stock.js';
 
 const CODE_RE = /^\d{6}$/;
+/** 后端 /api/stocks/suggest 的 limit 上限是 50：中文泛词可能命中几百只，尽量多取。 */
+const SUGGEST_LIMIT = 50;
+
+/**
+ * 后端对中文关键词只能按代码升序返回，输入「科技」「股份」时想要的股票常常排在前 8 条之外。
+ * 这里按相关性重排：完全匹配 > 名称前缀 > 代码前缀 > 名称包含 > 代码包含。
+ */
+function rank(list, text) {
+    const q = (text || '').trim().toLowerCase();
+    const score = (it) => {
+        const code = String(it.code || '').toLowerCase();
+        const name = String(it.name || '').toLowerCase();
+        if (name === q || code === q) return 0;
+        if (name.startsWith(q)) return 1;
+        if (code.startsWith(q)) return 2;
+        if (name.includes(q)) return 3;
+        if (code.includes(q)) return 4;
+        return 5;
+    };
+    return [...list].sort((a, b) => score(a) - score(b)
+        || String(a.name || '').length - String(b.name || '').length
+        || String(a.code || '').localeCompare(String(b.code || '')));
+}
 
 export default function StockSearch({
     value,
@@ -60,9 +83,9 @@ export default function StockSearch({
         const timer = setTimeout(async () => {
             setLoading(true);
             try {
-                const list = await stockApi.suggest(text, 8);
+                const list = await stockApi.suggest(text, SUGGEST_LIMIT);
                 if (seq !== seqRef.current) return;
-                const opts = Array.isArray(list) ? list : [];
+                const opts = rank(Array.isArray(list) ? list : [], text);
                 setOptions(opts);
                 setOpen(true);
                 cbRef.current.onOptions?.(opts, text);
@@ -110,16 +133,17 @@ export default function StockSearch({
         if (!list.length) {
             setLoading(true);
             try {
-                list = await stockApi.suggest(text, 8);
+                list = rank(await stockApi.suggest(text, SUGGEST_LIMIT), text);
             } catch {
                 list = [];
             } finally {
                 setLoading(false);
             }
         }
-        if (Array.isArray(list) && list.length) {
-            setOptions(list);
-            pick(list[0]);
+        const ranked = rank(Array.isArray(list) ? list : [], text);
+        if (ranked.length) {
+            setOptions(ranked);
+            pick(ranked[0]);
         } else {
             setOptions([]);
             setOpen(true);
@@ -182,6 +206,11 @@ export default function StockSearch({
                     ) : null}
                     {loading && !options.length ? (
                         <li className="prob-suggest-empty">检索中…</li>
+                    ) : null}
+                    {options.length >= SUGGEST_LIMIT ? (
+                        <li className="prob-suggest-more">仅显示匹配度最高的 {SUGGEST_LIMIT} 只，输入更完整的名称或代码可缩小范围</li>
+                    ) : options.length > 8 ? (
+                        <li className="prob-suggest-more">共 {options.length} 只匹配，可继续输入缩小范围</li>
                     ) : null}
                 </ul>
             ) : null}

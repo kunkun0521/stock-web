@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useApi } from '../hooks/useApi.js';
 import { getOverview, getPredictions } from './api.js';
 import StockSearch from './StockSearch.jsx';
+import CoverageHint from './CoverageHint.jsx';
 import F from './FormulaTerm.jsx';
 import { PAsync, PBadge, PBar, PBtn, PCard, PField, PKpi, PPager, PSelect } from './ProbParts.jsx';
 import { GRADE_HINT, GRADE_TONE, RISK_LABEL, RISK_TONE, dateStr, intervalBar,
@@ -68,12 +69,15 @@ export default function OverviewPanel({ params, patch, refreshKey }) {
         patch({ tab: 'stock', code: row.code, market: row.market, h: horizon });
     };
 
-    /** 联想结果变化：中文名自动采用第一只匹配股票的代码，下拉里可再点选其它。 */
+    /**
+     * 联想结果变化：中文名自动采用第一只匹配股票的代码，下拉里可再点选其它。
+     * 这里只更新过滤条件，不改 URL —— URL 的 q 由用户输入（changeText / handlePick）统一写入，
+     * 避免「联想返回 → patch → 路由更新 → 再联想」造成请求抖动与旧结果短暂覆盖新结果。
+     */
     const handleOptions = (list, text) => {
         if (!text) {
             setKeyword('');
             setPickedName('');
-            patch({ q: '' });
             return;
         }
         if (/^\d{6}$/.test(text)) {
@@ -81,14 +85,12 @@ export default function OverviewPanel({ params, patch, refreshKey }) {
             // 点选联想项后输入框会回填代码，这里要保留刚刚选中的中文名。
             setPickedName(list?.[0]?.name || '');
             setPage(1);
-            patch({ q: text });
             return;
         }
         setPage(1);
         if (list?.length) {
             setKeyword(String(list[0].code));
             setPickedName(list[0].name || '');
-            patch({ q: text });
         } else {
             // 没匹配到名称时把原文交给后端，配合空态提示，不会误显示全部股票。
             setKeyword(text);
@@ -104,11 +106,12 @@ export default function OverviewPanel({ params, patch, refreshKey }) {
         patch({ q: item.code });
     };
 
-    /** 手动改输入时清掉上一只选中股票的名称，避免名称与代码对不上。 */
+    /** 手动改输入时清掉上一只选中股票的名称，并把搜索词写进 URL（返回列表时保留）。 */
     const changeText = (v) => {
         setSearchText(v);
         setPickedName('');
         setPage(1);
+        patch({ q: v || '' });
     };
 
     const items = list.data?.items || [];
@@ -268,6 +271,7 @@ export default function OverviewPanel({ params, patch, refreshKey }) {
                         </>
                     )}
                 </PAsync>
+                {noData && /^\d{6}$/.test(keyword) ? <CoverageHint code={keyword}/> : null}
             </PCard>
         </>
     );

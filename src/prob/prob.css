@@ -119,6 +119,25 @@
 .prob-suggest .prob-suggest-empty { color: var(--ga-muted, #6b7280); cursor: default; justify-content: center; }
 .prob-suggest .prob-suggest-empty:hover { background: transparent; }
 .prob-row-name { margin-top: 2px; font-size: 11px; color: var(--ga-muted, #6b7280); }
+.prob-suggest .prob-suggest-more {
+    justify-content: center; cursor: default; font-size: 11px; white-space: normal;
+    color: var(--ga-muted, #6b7280); border-top: 1px solid var(--ga-border, #e6e8eb); border-radius: 0;
+}
+.prob-suggest .prob-suggest-more:hover { background: transparent; }
+
+/* ---------------------------------------------------------------- 覆盖诊断 */
+.prob-coverage {
+    margin-top: 12px; padding: 12px 14px; border-radius: 9px;
+    background: rgba(47, 111, 237, .055); border: 1px solid rgba(47, 111, 237, .22);
+    font-size: 12.5px; line-height: 1.85;
+}
+.prob-coverage-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-bottom: 6px; }
+.prob-coverage-head b { font-size: 13px; }
+.prob-coverage-head span { font-size: 11.5px; color: var(--ga-muted, #6b7280); }
+.prob-coverage p { margin: 4px 0; }
+.prob-coverage code, .prob-coverage b { font-variant-numeric: tabular-nums; }
+.prob-coverage-key { padding: 7px 10px; border-radius: 7px; background: var(--ga-card, #fff); }
+.prob-coverage-fix { color: var(--ga-muted, #6b7280); font-size: 12px; }
 
 /* ---------------------------------------------------------------- 条形 / 矩阵 */
 .prob-bar-list { display: flex; flex-direction: column; gap: 7px; }

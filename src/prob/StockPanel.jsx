@@ -5,6 +5,7 @@ import EChart from '../components/EChart.jsx';
 import { useApi } from '../hooks/useApi.js';
 import { getStock, getStockHistory, getStockSignals } from './api.js';
 import StockSearch from './StockSearch.jsx';
+import CoverageHint from './CoverageHint.jsx';
 import F from './FormulaTerm.jsx';
 import { PAsync, PBadge, PBar, PBtn, PCard, PKpi, PSelect } from './ProbParts.jsx';
 import { GRADE_HINT, GRADE_TONE, RISK_LABEL, RISK_TONE, VOL_CN, asObject, dateStr,
@@ -314,6 +315,7 @@ export default function StockPanel({ params, patch, refreshKey }) {
                     </>
                 )}
             </PAsync>
+            {stock.data && !preds.length ? <CoverageHint code={code}/> : null}
         </>
     );
 }
