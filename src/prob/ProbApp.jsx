@@ -4,7 +4,7 @@
  * 五个页面共用 URL 状态（tab / code / market / horizon），从榜单点进个股再返回时筛选条件不丢。
  * 顶部固定免责声明、全局「公式说明」入口与在途请求指示；刷新按钮对当前页所有请求生效。
  */
-import { useState } from 'react';
+import { Component, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { FormulaProvider, useFormula } from './FormulaContext.jsx';
 import FormulaModal from './FormulaModal.jsx';
@@ -25,6 +25,40 @@ const TABS = [
     { id: 'backtest', label: '回测' },
     { id: 'runs', label: '任务与参数' },
 ];
+
+/** 单个面板渲染出错时降级为错误卡片，避免整个 /prob 白屏；切换 tab 会重新挂载。 */
+class PanelBoundary extends Component {
+    constructor(props) {
+        super(props);
+        this.state = { error: null };
+    }
+
+    static getDerivedStateFromError(error) {
+        return { error };
+    }
+
+    componentDidCatch(error, info) {
+        console.error('[PROB] 面板渲染失败', error, info);
+    }
+
+    render() {
+        const { error } = this.state;
+        if (!error) return this.props.children;
+        return (
+            <section className="ga-card">
+                <header className="ga-card-head"><h3 className="ga-card-title">页面暂时无法打开</h3></header>
+                <div className="ga-card-body">
+                    <div className="ga-error">
+                        <div className="ga-error-head"><span>渲染出错</span></div>
+                        <div className="ga-error-msg">{String(error?.message || error)}</div>
+                    </div>
+                    <p className="prob-note">顶部导航仍可切换到其它页面；也可以点「刷新本页」或下方按钮重试。</p>
+                    <PBtn onClick={() => this.setState({ error: null })}>重试</PBtn>
+                </div>
+            </section>
+        );
+    }
+}
 
 function Shell() {
     const [searchParams, setSearchParams] = useSearchParams();
@@ -64,11 +98,13 @@ function Shell() {
             </div>
 
             <div className="ga-page">
-                {tab === 'overview' ? <OverviewPanel params={searchParams} patch={patch} refreshKey={refreshKey}/> : null}
-                {tab === 'stock' ? <StockPanel params={searchParams} patch={patch} refreshKey={refreshKey}/> : null}
-                {tab === 'eval' ? <EvalPanel refreshKey={refreshKey}/> : null}
-                {tab === 'backtest' ? <BacktestPanel refreshKey={refreshKey}/> : null}
-                {tab === 'runs' ? <RunsPanel refreshKey={refreshKey}/> : null}
+                <PanelBoundary key={tab}>
+                    {tab === 'overview' ? <OverviewPanel params={searchParams} patch={patch} refreshKey={refreshKey}/> : null}
+                    {tab === 'stock' ? <StockPanel params={searchParams} patch={patch} refreshKey={refreshKey}/> : null}
+                    {tab === 'eval' ? <EvalPanel refreshKey={refreshKey}/> : null}
+                    {tab === 'backtest' ? <BacktestPanel refreshKey={refreshKey}/> : null}
+                    {tab === 'runs' ? <RunsPanel refreshKey={refreshKey}/> : null}
+                </PanelBoundary>
             </div>
             <FormulaModal/>
         </div>

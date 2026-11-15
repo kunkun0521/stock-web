@@ -44,6 +44,15 @@ function ConfigView({ cfg }) {
     const [open, setOpen] = useState({ data: true });
     const entries = Object.entries(cfg || {}).filter(([k]) => !k.startsWith('__'));
     const q = query.trim().toLowerCase();
+    // 搜索命中时自动展开所有分组，方便直接看到命中的配置项。
+    useEffect(() => {
+        if (!q) return;
+        setOpen(() => {
+            const next = { other: true };
+            CONFIG_GROUPS.forEach((g) => { next[g.id] = true; });
+            return next;
+        });
+    }, [q]);
     const match = ([k, v]) => !q || k.toLowerCase().includes(q) ||
         JSON.stringify(v).toLowerCase().includes(q);
     const grouped = CONFIG_GROUPS.map((g) => ({
@@ -60,9 +69,13 @@ function ConfigView({ cfg }) {
                    onChange={(e) => setQuery(e.target.value)}/>
             <div className="prob-config-groups">
                 {groups.map((g) => (
-                    <details key={g.id} open={q ? true : !!open[g.id]}
-                             onToggle={(e) => setOpen((s) => ({ ...s, [g.id]: e.currentTarget.open }))}>
-                        <summary>{g.label} · {g.items.length} 项</summary>
+                    <details key={g.id} open={!!open[g.id]}>
+                        {/* 完全受控：阻止浏览器默认 toggle，避免原生状态与 React state 打架；
+                            也不能在 setState 的 updater 里读 e.currentTarget（事件派发后会被置空）。 */}
+                        <summary onClick={(e) => {
+                            e.preventDefault();
+                            setOpen((s) => ({ ...s, [g.id]: !s[g.id] }));
+                        }}>{g.label} · {g.items.length} 项</summary>
                         <div className="ga-table-wrap">
                             <table className="ga-table prob-table">
                                 <tbody>
