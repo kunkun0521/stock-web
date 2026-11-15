@@ -84,6 +84,42 @@
 .prob-backbar-actions { margin-left: auto; display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
 .prob-backbar-actions .ga-input { width: 110px; }
 
+/* ---------------------------------------------------------------- 股票搜索（代码 / 中文名联想）
+ * .ga-card 默认 overflow:hidden，含联想列表的卡片需要放开，否则下拉会被裁掉。 */
+.ga-card.prob-has-suggest { overflow: visible; }
+.prob-search { position: relative; min-width: 180px; }
+.prob-search-row { display: flex; align-items: center; gap: 6px; }
+.prob-search-row .ga-input { flex: 1; min-width: 0; width: 100%; }
+.prob-backbar-actions .prob-search .ga-input { width: 100%; }
+.prob-search-spin { color: var(--ga-accent, #2f6fed); flex: none; }
+.prob-picked {
+    display: inline-block; margin-top: 4px; padding: 1px 7px; border-radius: 10px;
+    background: rgba(47, 111, 237, .10); color: var(--ga-accent, #2f6fed);
+    font-size: 11px; line-height: 18px; max-width: 100%; overflow: hidden;
+    white-space: nowrap; text-overflow: ellipsis;
+}
+.prob-search-tip { display: block; margin-top: 4px; font-size: 11px; color: var(--ga-muted, #6b7280); }
+.prob-suggest {
+    position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 40;
+    max-height: 288px; overflow-y: auto; margin: 0; padding: 4px; list-style: none;
+    background: var(--ga-card, #fff); border: 1px solid var(--ga-border, #e6e8eb);
+    border-radius: 8px; box-shadow: 0 8px 24px rgba(20, 32, 56, .14);
+}
+.prob-suggest li {
+    display: flex; align-items: center; gap: 8px; padding: 6px 8px;
+    border-radius: 6px; cursor: pointer; font-size: 12.5px; white-space: nowrap;
+}
+.prob-suggest li:hover, .prob-suggest li.is-active { background: rgba(47, 111, 237, .09); }
+.prob-suggest li .code { font-weight: 700; font-variant-numeric: tabular-nums; }
+.prob-suggest li .name { flex: 1; overflow: hidden; text-overflow: ellipsis; }
+.prob-suggest li .tag {
+    flex: none; font-size: 10.5px; color: var(--ga-muted, #6b7280);
+    background: var(--ga-bg, #f5f6f8); border-radius: 4px; padding: 1px 5px;
+}
+.prob-suggest .prob-suggest-empty { color: var(--ga-muted, #6b7280); cursor: default; justify-content: center; }
+.prob-suggest .prob-suggest-empty:hover { background: transparent; }
+.prob-row-name { margin-top: 2px; font-size: 11px; color: var(--ga-muted, #6b7280); }
+
 /* ---------------------------------------------------------------- 条形 / 矩阵 */
 .prob-bar-list { display: flex; flex-direction: column; gap: 7px; }
 .prob-bar-row { display: grid; grid-template-columns: 116px 1fr 62px; gap: 8px; align-items: center; font-size: 12px; }

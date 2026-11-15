@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApi } from '../hooks/useApi.js';
 import { getOverview, getPredictions } from './api.js';
+import StockSearch from './StockSearch.jsx';
 import F from './FormulaTerm.jsx';
 import { PAsync, PBadge, PBar, PBtn, PCard, PField, PKpi, PPager, PSelect } from './ProbParts.jsx';
 import { GRADE_HINT, GRADE_TONE, RISK_LABEL, RISK_TONE, dateStr, intervalBar,
@@ -40,7 +41,11 @@ export default function OverviewPanel({ params, patch, refreshKey }) {
     const order = params.get('order') || 'desc';
     const [riskLevel, setRiskLevel] = useState(params.get('risk') || '');
     const [minGrade, setMinGrade] = useState(params.get('grade') || '');
+    // searchText 是输入框里看到的文字（可以是中文名），keyword 是实际传给后端的代码。
+    // 输入中文时由 StockSearch 的联想结果自动解析成 6 位代码，后端接口无需改动。
+    const [searchText, setSearchText] = useState(params.get('q') || '');
     const [keyword, setKeyword] = useState(params.get('q') || '');
+    const [pickedName, setPickedName] = useState('');
     const [excludeHighVol, setExcludeHighVol] = useState(params.get('hv') === '1');
     const [page, setPage] = useState(1);
     const [size, setSize] = useState(20);
@@ -61,6 +66,49 @@ export default function OverviewPanel({ params, patch, refreshKey }) {
     const openStock = (row) => {
         window.sessionStorage.setItem(SCROLL_KEY, String(window.scrollY));
         patch({ tab: 'stock', code: row.code, market: row.market, h: horizon });
+    };
+
+    /** 联想结果变化：中文名自动采用第一只匹配股票的代码，下拉里可再点选其它。 */
+    const handleOptions = (list, text) => {
+        if (!text) {
+            setKeyword('');
+            setPickedName('');
+            patch({ q: '' });
+            return;
+        }
+        if (/^\d{6}$/.test(text)) {
+            setKeyword(text);
+            // 点选联想项后输入框会回填代码，这里要保留刚刚选中的中文名。
+            setPickedName(list?.[0]?.name || '');
+            setPage(1);
+            patch({ q: text });
+            return;
+        }
+        setPage(1);
+        if (list?.length) {
+            setKeyword(String(list[0].code));
+            setPickedName(list[0].name || '');
+            patch({ q: text });
+        } else {
+            // 没匹配到名称时把原文交给后端，配合空态提示，不会误显示全部股票。
+            setKeyword(text);
+            setPickedName('');
+        }
+    };
+
+    const handlePick = (item) => {
+        setSearchText(String(item.code));
+        setKeyword(String(item.code));
+        setPickedName(item.name || '');
+        setPage(1);
+        patch({ q: item.code });
+    };
+
+    /** 手动改输入时清掉上一只选中股票的名称，避免名称与代码对不上。 */
+    const changeText = (v) => {
+        setSearchText(v);
+        setPickedName('');
+        setPage(1);
     };
 
     const items = list.data?.items || [];
@@ -93,8 +141,8 @@ export default function OverviewPanel({ params, patch, refreshKey }) {
                 ) : null}
             </PCard>
 
-            <PCard title="概率榜单" extra={
-                <span className="prob-muted">红涨绿跌 · 所有数值均为统计估计</span>
+            <PCard title="概率榜单" className="prob-has-suggest" extra={
+                <span className="prob-muted">红涨绿跌 · 支持代码 / 中文名搜索 · 所有数值均为统计估计</span>
             }>
                 <PBar>
                     <PField label="预测周期">
@@ -117,10 +165,14 @@ export default function OverviewPanel({ params, patch, refreshKey }) {
                         <PSelect value={minGrade} onChange={(v) => { setMinGrade(v); setPage(1); }}
                                  options={[{ value: '', label: '不限' }, ...'ABCD'.split('').map((g) => ({ value: g, label: `${g} 及以上` }))]}/>
                     </PField>
-                    <PField label="代码搜索">
-                        <input className="ga-input" value={keyword} placeholder="如 600519"
-                               onChange={(e) => { setKeyword(e.target.value); setPage(1); }}/>
-                    </PField>
+                    {/* 不用 PField（label）：联想列表里有可点选项，避免 label 的点击转发干扰 */}
+                    <div className="ga-field">
+                        <span className="ga-field-label">股票搜索 · 代码 / 中文名 / 简称</span>
+                        <StockSearch value={searchText} onChange={changeText}
+                                     onOptions={handleOptions} onPick={handlePick}
+                                     pickedName={pickedName} width={220}
+                                     placeholder="600519 / 贵州茅台 / 银行"/>
+                    </div>
                     <label className="prob-check">
                         <input type="checkbox" checked={excludeHighVol}
                                onChange={(e) => { setExcludeHighVol(e.target.checked); setPage(1); }}/>
@@ -146,7 +198,11 @@ export default function OverviewPanel({ params, patch, refreshKey }) {
                 </div>
 
                 <PAsync state={list} isEmpty={() => noData}
-                        emptyText="当前筛选条件下没有预测记录；可以放宽风险等级 / 可靠性，或先运行日常任务">
+                        emptyText={keyword && /\D/.test(keyword)
+                            ? `未找到「${keyword}」对应的股票或预测记录；可输入中文简称、6 位代码，或从联想列表里选择`
+                            : keyword
+                                ? `代码 ${keyword} 暂无预测记录：可能不在本次预测股票池（新股、ST、长期停牌、历史不足 250 日、数据不完整会被剔除），也可能其它筛选条件过严；清空搜索可返回完整榜单`
+                                : '当前筛选条件下没有预测记录；可以放宽风险等级 / 可靠性，或先运行日常任务'}>
                     {() => (
                         <>
                             <div className="ga-table-wrap">
@@ -170,7 +226,9 @@ export default function OverviewPanel({ params, patch, refreshKey }) {
                                         {items.map((r) => (
                                             <tr key={`${r.code}-${r.market}-${r.horizon}`}>
                                                 <td><button type="button" className="prob-code" onClick={() => openStock(r)}>{r.code}</button>
-                                                    <span className="prob-market">{r.market}</span></td>
+                                                    <span className="prob-market">{r.market}</span>
+                                                    {pickedName && String(r.code) === keyword
+                                                        ? <div className="prob-row-name">{pickedName}</div> : null}</td>
                                                 <td>
                                                     <div className={`prob-pup ga-tone-${Number(r.p_up) > 0.5 ? 'up' : 'down'}`}>
                                                         <b>{pct(r.p_up)}</b>

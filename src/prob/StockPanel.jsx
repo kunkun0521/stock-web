@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import EChart from '../components/EChart.jsx';
 import { useApi } from '../hooks/useApi.js';
 import { getStock, getStockHistory, getStockSignals } from './api.js';
+import StockSearch from './StockSearch.jsx';
 import F from './FormulaTerm.jsx';
 import { PAsync, PBadge, PBar, PBtn, PCard, PKpi, PSelect } from './ProbParts.jsx';
 import { GRADE_HINT, GRADE_TONE, RISK_LABEL, RISK_TONE, VOL_CN, asObject, dateStr,
@@ -98,6 +99,7 @@ export default function StockPanel({ params, patch, refreshKey }) {
     const code = params.get('code') || '600519';
     const market = params.get('market') || (code.startsWith('6') ? 'SH' : 'SZ');
     const [draft, setDraft] = useState(code);
+    const [pickedName, setPickedName] = useState('');
     const [h, setH] = useState(Number(params.get('sh') || 1));
     const stock = useApi(() => getStock(market, code), [market, code, refreshKey]);
     const history = useApi(() => getStockHistory(market, code, { horizon: h }), [market, code, h, refreshKey]);
@@ -121,12 +123,18 @@ export default function StockPanel({ params, patch, refreshKey }) {
         <>
             <div className="prob-backbar">
                 <PBtn sm variant="ghost" onClick={() => patch({ tab: 'overview', code: '', market: '' })}>← 返回概率总览</PBtn>
-                <span className="prob-muted">当前 {code}.{market} · 基准日 {dateStr(data.asof)}</span>
+                <span className="prob-muted">当前 {code}.{market}{pickedName ? ` · ${pickedName}` : ''} · 基准日 {dateStr(data.asof)}</span>
                 <div className="prob-backbar-actions">
-                    <input className="ga-input" value={draft} placeholder="六位代码" maxLength={6}
-                           onChange={(e) => setDraft(e.target.value.replace(/\D/g, ''))}/>
-                    <PBtn sm onClick={() => draft.length === 6 &&
-                        patch({ code: draft, market: draft.startsWith('6') ? 'SH' : 'SZ' })}>查询</PBtn>
+                    <StockSearch value={draft} onChange={(v) => { setDraft(v); setPickedName(''); }}
+                                 onPick={(item) => {
+                                     const c = String(item.code);
+                                     const mk = item.exchange || (c.startsWith('6') ? 'SH' : 'SZ');
+                                     setDraft(c);
+                                     setPickedName(item.name || '');
+                                     patch({ code: c, market: mk });
+                                 }}
+                                 pickedName={pickedName} showSubmit submitLabel="查询" width={210}
+                                 placeholder="代码或中文名，如 600519 / 贵州茅台"/>
                     <PBtn sm variant="ghost" onClick={() => navigate(`/stocks/${code}`, {
                         state: { from: window.location.pathname + window.location.search, fromLabel: '概率个股详情' },
                     })}>查看 K 线</PBtn>
@@ -135,7 +143,7 @@ export default function StockPanel({ params, patch, refreshKey }) {
             </div>
 
             <PAsync state={stock} isEmpty={() => !preds.length}
-                    emptyText="该代码暂无预测记录，请确认代码正确或先运行日常任务">
+                    emptyText="该代码暂无预测记录：可能不在本次预测股票池（新股、ST、长期停牌、历史不足 250 日、数据不完整会被剔除）。可换一只股票，或先运行日常任务">
                 {() => (
                     <>
                         <PCard title="各周期概率与期望" extra={<F id="label">h 个交易日累计收益</F>}>
